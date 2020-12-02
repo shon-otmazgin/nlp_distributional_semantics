@@ -26,7 +26,7 @@ ADVERBS = ['RB', 'RBR', 'RBS']
 CONTENT_WORD_TAGS = NOUNS + VERBS + ADJECTIVES + ADVERBS
 
 THRESHOLD = 100
-FEATURE_FREQUENT = 75
+FEATURE_FREQUENT = 2
 target_words = ['car', 'bus', 'hospital', 'hotel', 'gun', 'bomb', 'horse', 'fox', 'table', 'bowl', 'guitar', 'piano']
 
 
@@ -64,5 +64,5 @@ if __name__ == '__main__':
     with open(file, 'w') as f:
         f.writelines([f"{w[0]} {w[1]}\n" for w in word_frequency.most_common(n=50)])
 
-    vectorizer(word='be', counts=counts, word_frequency=word_frequency)
+    vectorizer(word='episode', counts=counts, word_frequency=word_frequency)
     print("--- %s seconds ---" % (time.time() - start_time))
