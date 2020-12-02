@@ -2,6 +2,7 @@ import time
 from collections import defaultdict, Counter
 from itertools import groupby
 from itertools import combinations
+import math
 
 ID = 'ID'
 FORM = 'FORM'
@@ -46,10 +47,12 @@ def read_data(file):
     return counts, word_frequency
 
 
-def vectorizer(word, counts, word_frequency):
+def vectorizer(word, counts, z):
     features = counts[word].most_common(n=THRESHOLD)
     features = [f[0] for f in features if f[1] >= FEATURE_FREQUENT]
-    v = {f: counts[word][f] / (sum(counts[word].values()) * sum(counts[f].values())) for f in features}
+    v = {f: math.log((z * counts[word][f]) / (sum(counts[word].values()) * sum(counts[f].values()))) for f in features}
+    for f in v:
+        v[f] = 0 if v[f] < 0 else v[f]
     print(f"vector to word {word}: {v}")
 
 
@@ -63,5 +66,6 @@ if __name__ == '__main__':
     with open(file, 'w') as f:
         f.writelines([f"{w[0]} {w[1]}\n" for w in word_frequency.most_common(n=50)])
 
-    vectorizer(word='episode', counts=counts, word_frequency=word_frequency)
+    z = sum([sum(counts[w].values()) for w in counts])
+    vectorizer(word='episode', counts=counts, z=z)
     print("--- %s seconds ---" % (time.time() - start_time))
