@@ -47,25 +47,54 @@ def read_data(file):
     return counts, word_frequency
 
 
-def vectorizer(word, counts, z):
-    features = counts[word].most_common(n=THRESHOLD)
-    features = [f[0] for f in features if f[1] >= FEATURE_FREQUENT]
-    v = {f: math.log((z * counts[word][f]) / (sum(counts[word].values()) * sum(counts[f].values()))) for f in features}
-    for f in v:
-        v[f] = 0 if v[f] < 0 else v[f]
-    print(f"vector to word {word}: {v}")
+file = 'wikipedia.tinysample.trees.lemmatized'
+counts, word_frequency = read_data(file=file)
+z = sum([sum(counts[w].values()) for w in counts])
+
+
+def p(u=None, att=None):
+    if u is None and att is None:
+        return 1
+    if u is None:
+        return sum(counts[att].values()) / z
+    if att is None:
+        return sum(counts[u].values()) / z
+    return counts[u][att] / z
+
+
+def get_similarities(target_word, counts):
+    similarity_result = Counter()
+
+    attributes = counts[target_word]
+    for att in attributes:
+        for v in counts[att]:
+            u_att = math.log(p(u=target_word, att=att) / (p(u=target_word) * p(att=att)))
+            v_att = math.log(p(u=v, att=att) / (p(u=v) * p(att=att)))
+            if u_att <= 0 or v_att <= 0:
+                continue
+            similarity_result[v] += u_att * v_att
+
+    print(similarity_result.most_common())
 
 
 if __name__ == '__main__':
     start_time = time.time()
 
-    file = 'wikipedia.tinysample.trees.lemmatized'
-    counts, word_frequency = read_data(file=file)
-
     file = 'counts_words.txt'
     with open(file, 'w') as f:
         f.writelines([f"{w[0]} {w[1]}\n" for w in word_frequency.most_common(n=50)])
 
-    z = sum([sum(counts[w].values()) for w in counts])
-    vectorizer(word='episode', counts=counts, z=z)
+    #check p(u, att) = 1
+    p_1 = sum([p(u=w, att=att) for w in counts for att in counts[w]])
+    print(p_1)
+
+    # check p(u) = 1
+    p_2 = sum([p(u=w) for w in counts])
+    print(p_2)
+
+    # check p(u, att) = 1
+    p_3 = sum([p(att=att) for att in counts])
+    print(p_3)
+
+    get_similarities(target_word='gun', counts=counts)
     print("--- %s seconds ---" % (time.time() - start_time))
