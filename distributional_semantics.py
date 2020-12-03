@@ -156,8 +156,10 @@ class WordSimilarities:
 
 if __name__ == '__main__':
 
+    start_time_total = time.time()
+
     start_time = time.time()
-    file = 'wikipedia.sample.trees.lemmatized'
+    file = 'wikipedia.tinysample.trees.lemmatized'
     stats = WordsStats(window=2).fit(file=file)
     print(f'Finished fit stats {(time.time() - start_time):.3f} sec')
 
@@ -174,8 +176,9 @@ if __name__ == '__main__':
         start_time = time.time()
         sent_similarities = word_sim.get_similarities(target_word=word, method=stats.SENTENCE)
         window_similarities = word_sim.get_similarities(target_word=word, method=stats.WINDOW)
-        print(f'inference for {word} {(time.time() - start_time):.3f} sec')
         print(word)
         for (sent_word, sent_sim), (win_word, win_sim) in zip(sent_similarities.most_common(20), window_similarities.most_common(20)):
-            print(f"{sent_word:<10} {sent_sim:.3f}\t{win_word:<10} {win_sim:.3f}")
+            print(f"{sent_word:<20} {sent_sim:.3f}\t{win_word:<20} {win_sim:.3f}")
         print('*********')
+
+    print(f'Finished time: {(time.time() - start_time_total):.3f} sec')
