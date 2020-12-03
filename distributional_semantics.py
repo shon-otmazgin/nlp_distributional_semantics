@@ -1,7 +1,6 @@
 import time
 from collections import defaultdict, Counter
 from itertools import groupby
-from itertools import combinations
 import math
 
 ID = 'ID'
@@ -14,7 +13,6 @@ HEAD = 'HEAD'
 DEPREL = 'DEPREL'
 PHEAD = 'PHEAD'
 PDEPREL = 'PDEPREL'
-FREQ = '#freq'
 FIELDS_H = [ID, FORM, LEMMA, CPOSTAG, POSTAG, FEATS, HEAD, DEPREL, PHEAD, PDEPREL]
 
 # https://webapps.towson.edu/ows/ptsspch.htm#:~:text=Content%20words%20are%20words%20that,language%20as%20they%20become%20obsolete.
@@ -34,7 +32,7 @@ target_words = ['car', 'bus', 'hospital', 'hotel', 'gun', 'bomb', 'horse', 'fox'
 class WordsStats:
     def __init__(self):
         self.word_counts = defaultdict(Counter)  # dict of words to dict of attributes count
-        self.att_counts = defaultdict(Counter)  # dict of att to dict of words count
+        self.att_counts = defaultdict(Counter)   # dict of att to dict of words count
         self.word_frequency = Counter()
         self.total = 0
 
@@ -49,6 +47,10 @@ class WordsStats:
             elif method == 'dependency':
                 pass
 
+        ### Filtering Features:
+        ### feature is a tuple of (word, att1(optional), att1(optional), ...)
+        ### 100 most_common features for a word
+        ### frequent of the feature's word (location 0 in the tuple) should be grater than 75
         for w in self.word_counts:
             c = Counter()
             for att, count in self.word_counts[w].most_common(n=FEATURES_LIMIT):
@@ -57,6 +59,7 @@ class WordsStats:
                     self.att_counts[att][w] = count
             self.word_counts[w] = c
 
+        # cache p(*,*)
         self.total = sum([self.word_counts[w][att] for w in self.word_counts for att in self.word_counts[w]])
         return self
 
@@ -81,7 +84,6 @@ class WordsStats:
             words_window += content_words[i + 1:high]
             for co_word in words_window:
                 self.word_counts[w][(co_word, )] += 1
-                # self.att_counts[(co_word,)][w] += 1
 
             self.word_frequency[w] += 1
 
@@ -92,8 +94,8 @@ class WordSimilarities:
         self.corpus_threshold = corpus_threshold
         self.feature_threshold = feature_threshold
         self.l2_norm = Counter()
-        self.word_vecs = defaultdict(Counter)
-        self.att_vecs = defaultdict(Counter)
+        self.word_vecs = defaultdict(Counter) # for efficient cosine similariy
+        self.att_vecs = defaultdict(Counter)  # for efficient cosine similariy
 
     def fit(self):
         #check p(u, att) = 1
@@ -108,6 +110,7 @@ class WordSimilarities:
         p_3 = sum([self.p(att=att) for att in self.stats.att_counts])
         print(f"p(att) = {p_3}")
 
+        # pre process - create ppmi vector to each word and also calc the norm.
         for w in self.stats.word_counts:
             for att in self.stats.word_counts[w]:
                 ppmi = self.get_PPMI(u=w, att=att)
