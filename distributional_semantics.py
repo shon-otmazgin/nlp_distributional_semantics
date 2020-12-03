@@ -30,9 +30,9 @@ class WordsStats:
     SENTENCE = 'sentence'
     WINDOW = 'window'
     DEPENDENCY = 'dependency'
-    WORD_FREQUENT = 1
     IN = 'in'
     OUT = 'out'
+    WORD_FREQUENT = 1
     FEATURE_WORD_FREQUENT = 1
     FEATURES_LIMIT = 100
 
@@ -79,7 +79,7 @@ class WordsStats:
             if dep_d is None:
                 continue
             self.word_counts[self.DEPENDENCY][w][(dep_d[LEMMA], dep_d[DEPREL], self.IN)] += 1
-            self.word_counts[self.DEPENDENCY][dep_d[DEPREL]][(dep_d[LEMMA], w, self.OUT)] += 1
+            self.word_counts[self.DEPENDENCY][dep_d[LEMMA]][(w, dep_d[DEPREL], self.OUT)] += 1
 
     def filter_stats(self, method):
         """
