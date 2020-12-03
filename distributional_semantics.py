@@ -16,6 +16,7 @@ PDEPREL = 'PDEPREL'
 FIELDS_H = [ID, FORM, LEMMA, CPOSTAG, POSTAG, FEATS, HEAD, DEPREL, PHEAD, PDEPREL]
 
 # https://webapps.towson.edu/ows/ptsspch.htm#:~:text=Content%20words%20are%20words%20that,language%20as%20they%20become%20obsolete.
+PREPOSITION = ['IN']
 NOUNS = ['NN', 'NNS', 'NNP', 'NNPS']
 VERBS = ['VB', 'VBD', 'VBG', 'VBN', 'VBP', 'VBZ']
 ADJECTIVES = ['JJ', 'JJR', 'JJS']
@@ -29,8 +30,10 @@ class WordsStats:
     SENTENCE = 'sentence'
     WINDOW = 'window'
     DEPENDENCY = 'dependency'
-    WORD_FREQUENT = 100
-    FEATURE_WORD_FREQUENT = 75
+    WORD_FREQUENT = 1
+    IN = 'in'
+    OUT = 'out'
+    FEATURE_WORD_FREQUENT = 1
     FEATURES_LIMIT = 100
 
     def __init__(self, window):
@@ -48,6 +51,7 @@ class WordsStats:
         for s_d in sents_dep:
             s_tokenize = [{h: v for h, v in zip(FIELDS_H, token.rstrip('\n').split('\t'))} for token in s_d]
             self.words_co_occurring(sentence_tokenized=s_tokenize)
+            self.words_dependency(sentence_tokenized=s_tokenize)
 
         self.filter_stats(method=self.SENTENCE)
         self.filter_stats(method=self.WINDOW)
@@ -65,6 +69,17 @@ class WordsStats:
                     self.total_att[method][att] += att_c
 
         return self
+
+    def words_dependency(self, sentence_tokenized):
+        for d in sentence_tokenized:
+            if d[POSTAG] not in CONTENT_WORD_TAGS:
+                continue
+            w = d[LEMMA]
+            dep_d = sentence_tokenized[int(d[HEAD])-1] if int(d[HEAD]) > 0 else None
+            if dep_d is None:
+                continue
+            self.word_counts[self.DEPENDENCY][w][(dep_d[LEMMA], dep_d[DEPREL], self.IN)] += 1
+            self.word_counts[self.DEPENDENCY][dep_d[DEPREL]][(dep_d[LEMMA], w, self.OUT)] += 1
 
     def filter_stats(self, method):
         """
@@ -176,9 +191,10 @@ if __name__ == '__main__':
         start_time = time.time()
         sent_similarities = word_sim.get_similarities(target_word=word, method=stats.SENTENCE)
         window_similarities = word_sim.get_similarities(target_word=word, method=stats.WINDOW)
+        dep_similarities = word_sim.get_similarities(target_word=word, method=stats.DEPENDENCY)
         print(word)
-        for (sent_word, sent_sim), (win_word, win_sim) in zip(sent_similarities.most_common(20), window_similarities.most_common(20)):
-            print(f"{sent_word:<20} {sent_sim:.3f}\t{win_word:<20} {win_sim:.3f}")
+        for (sent_word, sent_sim), (win_word, win_sim), (dep_word, dep_sim) in zip(sent_similarities.most_common(20), window_similarities.most_common(20), dep_similarities.most_common(20)):
+            print(f"{sent_word:<20} {sent_sim:.3f}\t{win_word:<20} {win_sim:.3f}\t{dep_word:<20} {dep_sim:.3f}")
         print('*********')
 
     print(f'Finished time: {(time.time() - start_time_total):.3f} sec')
