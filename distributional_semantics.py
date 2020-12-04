@@ -32,8 +32,8 @@ class WordsStats:
     DEPENDENCY = 'dependency'
     IN = 'in'
     OUT = 'out'
-    WORD_FREQUENT = 1
-    FEATURE_WORD_FREQUENT = 1
+    WORD_FREQUENT = 100
+    FEATURE_WORD_FREQUENT = 75
     FEATURES_LIMIT = 100
 
     def __init__(self, window):
@@ -53,8 +53,7 @@ class WordsStats:
             self.words_co_occurring(sentence_tokenized=s_tokenize)
             self.words_dependency(sentence_tokenized=s_tokenize)
 
-        self.filter_stats(method=self.SENTENCE)
-        self.filter_stats(method=self.WINDOW)
+        self.filter_stats()
 
         for method in self.word_counts:
             for w, w_c in self.word_counts[method].items():
@@ -81,19 +80,20 @@ class WordsStats:
             self.word_counts[self.DEPENDENCY][w][(dep_d[LEMMA], dep_d[DEPREL], self.IN)] += 1
             self.word_counts[self.DEPENDENCY][dep_d[LEMMA]][(w, dep_d[DEPREL], self.OUT)] += 1
 
-    def filter_stats(self, method):
+    def filter_stats(self):
         """
         ### Filtering Features:
         ### feature is a tuple of (word, att1(optional), att1(optional), ...)
         ### 100 most_common features for a word
         ### frequent of the feature's word (location 0 in the tuple) should be grater than 75
         """
-        for w in self.word_counts[method]:
-            c = Counter()
-            for att, count in self.word_counts[method][w].most_common(n=self.FEATURES_LIMIT):
-                if self.word_frequency[att[0]] >= self.FEATURE_WORD_FREQUENT:
-                    c[att] = count
-            self.word_counts[method][w] = c
+        for method in self.word_counts:
+            for w in self.word_counts[method]:
+                c = Counter()
+                for att, count in self.word_counts[method][w].most_common(n=self.FEATURES_LIMIT):
+                    if self.word_frequency[att[0]] >= self.FEATURE_WORD_FREQUENT:
+                        c[att] = count
+                self.word_counts[method][w] = c
 
     def words_co_occurring(self, sentence_tokenized):
 
@@ -174,7 +174,7 @@ if __name__ == '__main__':
     start_time_total = time.time()
 
     start_time = time.time()
-    file = 'wikipedia.tinysample.trees.lemmatized'
+    file = 'wikipedia.sample.trees.lemmatized'
     stats = WordsStats(window=2).fit(file=file)
     print(f'Finished fit stats {(time.time() - start_time):.3f} sec')
 
