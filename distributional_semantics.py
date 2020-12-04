@@ -18,7 +18,7 @@ FIELDS_H = [ID, FORM, LEMMA, CPOSTAG, POSTAG, FEATS, HEAD, DEPREL, PHEAD, PDEPRE
 # https://webapps.towson.edu/ows/ptsspch.htm#:~:text=Content%20words%20are%20words%20that,language%20as%20they%20become%20obsolete.
 PREPOSITION = ['IN']
 NOUNS = ['NN', 'NNS', 'NNP', 'NNPS']
-VERBS = ['VB', 'VBD', 'VBG', 'VBN', 'VBP', 'VBZ']
+VERBS = ['VB', 'VBD', 'VBG', 'VBN', 'VBP']#, 'VBZ']
 ADJECTIVES = ['JJ', 'JJR', 'JJS']
 ADVERBS = ['RB', 'RBR', 'RBS']
 
@@ -70,22 +70,51 @@ class WordsStats:
         return self
 
     def words_dependency(self, sentence_tokenized):
-        for d in sentence_tokenized:
-            if d[POSTAG] not in CONTENT_WORD_TAGS:
+        content_words, prp_words, noun_words = [], [], []
+        for w in sentence_tokenized:
+            if w[POSTAG] in CONTENT_WORD_TAGS:
+                content_words.append(w)
+            elif w[POSTAG] in PREPOSITION:
+                prp_words.append(w)
+            if w[POSTAG] in NOUNS:
+                noun_words.append(w)
+
+        for w in content_words:
+            w_head = sentence_tokenized[int(w[HEAD])-1] if int(w[HEAD]) > 0 else None
+            if w_head is None:
                 continue
-            w = d[LEMMA]
-            dep_d = sentence_tokenized[int(d[HEAD])-1] if int(d[HEAD]) > 0 else None
-            if dep_d is None:
-                continue
-            self.word_counts[self.DEPENDENCY][w][(dep_d[LEMMA], dep_d[DEPREL], self.IN)] += 1
-            self.word_counts[self.DEPENDENCY][dep_d[LEMMA]][(w, dep_d[DEPREL], self.OUT)] += 1
+
+            # case 1
+            for prp in prp_words:
+                if prp[HEAD] == w[ID]:
+                    for noun in noun_words:
+                        if noun[HEAD] == prp[ID]:
+                            label = w[DEPREL] + " " + prp[LEMMA]
+
+                            feature1 = (noun[LEMMA], label, self.OUT)
+                            feature2 = (w[LEMMA], label, self.IN)
+                            self.word_counts[self.DEPENDENCY][w[LEMMA]][feature1] += 1
+                            self.word_counts[self.DEPENDENCY][noun[LEMMA]][feature2] += 1
+
+            if w_head[POSTAG] in PREPOSITION: # case 2
+                prp_head = sentence_tokenized[int(w_head[HEAD])-1]
+                label = w_head[DEPREL] + " " + w_head[LEMMA]
+
+                feature1 = (prp_head[LEMMA], label, self.IN)
+                feature2 = (w[LEMMA], label, self.OUT)
+                self.word_counts[self.DEPENDENCY][w[LEMMA]][feature1] += 1
+                self.word_counts[self.DEPENDENCY][prp_head[LEMMA]][feature2] += 1
+
+            else:
+                self.word_counts[self.DEPENDENCY][w[LEMMA]][(w_head[LEMMA], w[DEPREL], self.IN)] += 1
+                self.word_counts[self.DEPENDENCY][w_head[LEMMA]][(w[LEMMA], w[DEPREL], self.OUT)] += 1
 
     def filter_stats(self):
         """
-        ### Filtering Features:
-        ### feature is a tuple of (word, att1(optional), att1(optional), ...)
-        ### 100 most_common features for a word
-        ### frequent of the feature's word (location 0 in the tuple) should be grater than 75
+        Filtering Features:
+        feature is a tuple of (word, att1(optional), att1(optional), ...)
+        100 most_common features for a word
+        frequent of the feature's word (location 0 in the tuple) should be grater than 75
         """
         for method in self.word_counts:
             for w in self.word_counts[method]:
@@ -174,7 +203,7 @@ if __name__ == '__main__':
     start_time_total = time.time()
 
     start_time = time.time()
-    file = 'wikipedia.sample.trees.lemmatized'
+    file = 'wikipedia.tinysample.trees.lemmatized'
     stats = WordsStats(window=2).fit(file=file)
     print(f'Finished fit stats {(time.time() - start_time):.3f} sec')
 
