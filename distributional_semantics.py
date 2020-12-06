@@ -215,7 +215,7 @@ if __name__ == '__main__':
     word_sim = WordSimilarities(stats=stats).fit()
     print(f'Finished fit Similarities {(time.time() - start_time):.3f} sec')
 
-    print()
+    print("hey there, I'm a change!")
     # for word in target_words:
     #     start_time = time.time()
     #     sent_similarities = word_sim.get_similarities(target_word=word, method=stats.SENTENCE)
