@@ -2,56 +2,43 @@ import time
 from collections import defaultdict, Counter
 from itertools import groupby
 import math
-
-ID = 'ID'
-FORM = 'FORM'
-LEMMA = 'LEMMA'
-CPOSTAG = 'CPOSTAG'
-POSTAG = 'POSTAG'
-FEATS = 'FEATS'
-HEAD = 'HEAD'
-DEPREL = 'DEPREL'
-PHEAD = 'PHEAD'
-PDEPREL = 'PDEPREL'
-FIELDS_H = [ID, FORM, LEMMA, CPOSTAG, POSTAG, FEATS, HEAD, DEPREL, PHEAD, PDEPREL]
-
-# https://webapps.towson.edu/ows/ptsspch.htm#:~:text=Content%20words%20are%20words%20that,language%20as%20they%20become%20obsolete.
-PREPOSITION = ['IN']
-NOUNS = ['NN', 'NNS', 'NNP', 'NNPS']
-VERBS = ['VB', 'VBD', 'VBG', 'VBN', 'VBP']#, 'VBZ']
-ADJECTIVES = ['JJ', 'JJR', 'JJS']
-ADVERBS = ['RB', 'RBR', 'RBS']
-
-CONTENT_WORD_TAGS = NOUNS + VERBS + ADJECTIVES + ADVERBS
-target_words = ['car', 'bus', 'hospital', 'hotel', 'gun', 'bomb', 'horse', 'fox', 'table', 'bowl', 'guitar', 'piano']
+from utils import *
 
 
 class WordsStats:
-    SENTENCE = 'sentence'
-    WINDOW = 'window'
-    DEPENDENCY = 'dependency'
-    IN = 'in'
-    OUT = 'out'
-    WORD_FREQUENT = 100
-    FEATURE_WORD_FREQUENT = 75
-    FEATURES_LIMIT = 100
-
-    def __init__(self, window):
+    def __init__(self, window, word_freq, attributes_word_freq, attributes_limit):
         self.window = window
-        self.word_counts = defaultdict(lambda: defaultdict(Counter))   # word_counts[method][word][feature] = #freq
-        self.total = {self.SENTENCE: 0, self.WINDOW: 0, self.DEPENDENCY: 0}
-        self.total_u = {self.SENTENCE: defaultdict(lambda: 0), self.WINDOW: defaultdict(lambda: 0), self.DEPENDENCY: defaultdict(lambda: 0)}
-        self.total_att = {self.SENTENCE: defaultdict(lambda: 0), self.WINDOW: defaultdict(lambda: 0), self.DEPENDENCY: defaultdict(lambda: 0)}
         self.word_frequency = Counter()
+        self.word_counts = defaultdict(lambda: defaultdict(Counter))   # word_counts[method][word][attribute] = #freq
+        self.total = {SENTENCE: 0, WINDOW: 0, DEPENDENCY: 0}
+        self.total_w = {SENTENCE: defaultdict(lambda: 0), WINDOW: defaultdict(lambda: 0), DEPENDENCY: defaultdict(lambda: 0)}
+        self.total_att = {SENTENCE: defaultdict(lambda: 0), WINDOW: defaultdict(lambda: 0), DEPENDENCY: defaultdict(lambda: 0)}
+        self.str2int = defaultdict(lambda: 0)
+        self.int2str = {}
+        self.word_freq = word_freq
+        self.attributes_word_freq = attributes_word_freq
+        self.attributes_limit = attributes_limit
+
+    def _get_w_hash(self, w):
+        hashed_w = self.str2int[w]
+        if hashed_w == 0:
+            hashed_w = hash(w)
+            self.str2int[w] = hashed_w
+            self.int2str[hashed_w] = w
+
+        return hashed_w
+
+    def _get_w(self, hashed_w):
+        return self.int2str[hashed_w]
 
     def fit(self, file):
         with open(file, 'r', encoding='utf8') as f:
-            sents_dep = [list(group) for k, group in groupby(f.readlines(), lambda x: x == '\n') if not k]
+            sentences = [list(group) for k, group in groupby(f.readlines(), lambda x: x == '\n') if not k]
 
-        for s_d in sents_dep:
-            s_tokenize = [{h: v for h, v in zip(FIELDS_H, token.rstrip('\n').split('\t'))} for token in s_d]
-            self.words_co_occurring(sentence_tokenized=s_tokenize)
-            self.words_dependency(sentence_tokenized=s_tokenize)
+        for sent in sentences:
+            tokenized_sent = [{h: v for h, v in zip(FIELDS_H, token.rstrip('\n').split('\t'))} for token in sent]
+            self.words_co_occurring(tokenized_sentence=tokenized_sent)
+            # self.words_dependency(sentence_tokenized=tokenized_sent)
 
         self.filter_stats()
 
@@ -59,86 +46,99 @@ class WordsStats:
             for w, w_c in self.word_counts[method].items():
                 # cache p(*,*)
                 self.total[method] += sum(w_c.values())
-
                 # cache p(u,*)
-                self.total_u[method][w] += sum(w_c.values())
+                hashed_w = self._get_w_hash(w)
+                self.total_w[method][hashed_w] += sum(w_c.values())
 
                 # cache p(*,att)
                 for att, att_c in w_c.items():
-                    self.total_att[method][att] += att_c
+                    hashed_att = self._get_w_hash(att)
+                    self.total_att[method][hashed_att] += att_c
 
         return self
 
-    def words_dependency(self, sentence_tokenized):
-        content_words, prp_words, noun_words = [], [], []
-        for w in sentence_tokenized:
-            if w[POSTAG] in CONTENT_WORD_TAGS:
-                content_words.append(w)
-            elif w[POSTAG] in PREPOSITION:
-                prp_words.append(w)
-            if w[POSTAG] in NOUNS:
-                noun_words.append(w)
-
-        for w in content_words:
-            w_head = sentence_tokenized[int(w[HEAD])-1] if int(w[HEAD]) > 0 else None
-            if w_head is None:
-                continue
-
-            # case 1
-            for prp in prp_words:
-                if prp[HEAD] == w[ID]:
-                    for noun in noun_words:
-                        if noun[HEAD] == prp[ID]:
-                            label = w[DEPREL] + " " + prp[LEMMA]
-
-                            feature1 = (noun[LEMMA], label, self.OUT)
-                            feature2 = (w[LEMMA], label, self.IN)
-                            self.word_counts[self.DEPENDENCY][w[LEMMA]][feature1] += 1
-                            self.word_counts[self.DEPENDENCY][noun[LEMMA]][feature2] += 1
-
-            if w_head[POSTAG] in PREPOSITION: # case 2
-                prp_head = sentence_tokenized[int(w_head[HEAD])-1]
-                label = w_head[DEPREL] + " " + w_head[LEMMA]
-
-                feature1 = (prp_head[LEMMA], label, self.IN)
-                feature2 = (w[LEMMA], label, self.OUT)
-                self.word_counts[self.DEPENDENCY][w[LEMMA]][feature1] += 1
-                self.word_counts[self.DEPENDENCY][prp_head[LEMMA]][feature2] += 1
-
-            else:
-                self.word_counts[self.DEPENDENCY][w[LEMMA]][(w_head[LEMMA], w[DEPREL], self.IN)] += 1
-                self.word_counts[self.DEPENDENCY][w_head[LEMMA]][(w[LEMMA], w[DEPREL], self.OUT)] += 1
+    # def words_dependency(self, sentence_tokenized):
+    #     content_words, prp_words, noun_words = [], [], []
+    #     for w in sentence_tokenized:
+    #         if w[POSTAG] in CONTENT_WORD_TAGS:
+    #             content_words.append(w)
+    #         elif w[POSTAG] in PREPOSITION:
+    #             prp_words.append(w)
+    #         if w[POSTAG] in NOUNS:
+    #             noun_words.append(w)
+    # 
+    #     for w in content_words:
+    #         w_head = sentence_tokenized[int(w[HEAD])-1] if int(w[HEAD]) > 0 else None
+    #         if w_head is None:
+    #             continue
+    # 
+    #         hashed_w = self._get_w_hash(w[LEMMA])
+    #         # case 1
+    #         for prp in prp_words:
+    #             if prp[HEAD] == w[ID]:
+    #                 for noun in noun_words:
+    #                     if noun[HEAD] == prp[ID]:
+    #                         label = w[DEPREL] + " " + prp[LEMMA]
+    # 
+    #                         feature1 = (noun[LEMMA], label, self.OUT)
+    #                         feature2 = (w[LEMMA], label, self.IN)
+    # 
+    #                         hashed_noun = self._get_w_hash(noun[LEMMA])
+    #                         self.word_counts[self.DEPENDENCY][hashed_w][feature1] += 1
+    #                         self.word_counts[self.DEPENDENCY][hashed_noun][feature2] += 1
+    # 
+    #         if w_head[POSTAG] in PREPOSITION: # case 2
+    #             prp_head = sentence_tokenized[int(w_head[HEAD])-1]
+    #             label = w_head[DEPREL] + " " + w_head[LEMMA]
+    # 
+    #             feature1 = (prp_head[LEMMA], label, self.IN)
+    #             feature2 = (w[LEMMA], label, self.OUT)
+    # 
+    #             hashed_prp = self._get_w_hash(prp_head[LEMMA])
+    #             self.word_counts[self.DEPENDENCY][hashed_w][feature1] += 1
+    #             self.word_counts[self.DEPENDENCY][hashed_prp][feature2] += 1
+    # 
+    #         else:
+    #             self.word_counts[self.DEPENDENCY][hashed_w][(w_head[LEMMA], w[DEPREL], self.IN)] += 1
+    #             hashed_w_head = self._get_w_hash(w_head[LEMMA])
+    #             self.word_counts[self.DEPENDENCY][hashed_w_head][(w[LEMMA], w[DEPREL], self.OUT)] += 1
 
     def filter_stats(self):
         """
         Filtering Features:
-        feature is a tuple of (word, att1(optional), att1(optional), ...)
+        attribute is a tuple of (word, att1(optional), att1(optional), ...)
         100 most_common features for a word
-        frequent of the feature's word (location 0 in the tuple) should be grater than 75
+        frequent of the attribute's word (location 0 in the tuple) should be grater than 75
         """
         for method in self.word_counts:
             for w in self.word_counts[method]:
                 c = Counter()
-                for att, count in self.word_counts[method][w].most_common(n=self.FEATURES_LIMIT):
-                    if self.word_frequency[att[0]] >= self.FEATURE_WORD_FREQUENT:
-                        c[att] = count
-                self.word_counts[method][w] = c
+                hashed_w = self._get_w_hash(w)
+                for hashed_att, count in self.word_counts[method][hashed_w].most_common(n=self.attributes_limit):
+                    att = self._get_w(hashed_att)
+                    hashed_w_att = self._get_w_hash(att[0])
+                    if self.word_frequency[hashed_w_att] >= self.attributes_word_freq:
+                        c[hashed_att] = count
+                self.word_counts[method][hashed_w] = c
 
-    def words_co_occurring(self, sentence_tokenized):
-
-        content_words = [d[LEMMA] for d in sentence_tokenized if d[POSTAG] in CONTENT_WORD_TAGS]
+    def words_co_occurring(self, tokenized_sentence):
+        content_words = [row[LEMMA] for row in tokenized_sentence if row[POSTAG] in CONTENT_WORD_TAGS]
         for i, w in enumerate(content_words):
+            hashed_w = self._get_w_hash(w)
+
             low = i - self.window if i >= self.window else 0
             high = i + self.window + 1 if i + self.window + 1 <= len(content_words) else len(content_words)
-            words_window = content_words[low:i] + content_words[i+1:high]
-            for co_word in words_window:
-                self.word_counts[self.WINDOW][w][(co_word,)] += 1
+            window = content_words[low:i] + content_words[i+1:high]
+            for co_word in window:
+                hashed_feature = self._get_w_hash((co_word,))
+                self.word_counts[WINDOW][hashed_w][hashed_feature] += 1
 
-            sent_window = content_words[0:i] + content_words[i+1:]
-            for co_word in sent_window:
-                self.word_counts[self.SENTENCE][w][(co_word,)] += 1
+            sentence = content_words[0:i] + content_words[i+1:]
+            for co_word in sentence:
+                hashed_co_word = self._get_w_hash((co_word,))
+                self.word_counts[SENTENCE][hashed_w][hashed_co_word] += 1
 
-            self.word_frequency[w] += 1
+            self.word_frequency[hashed_w] += 1
 
 
 class WordSimilarities:
@@ -162,7 +162,7 @@ class WordSimilarities:
         # pre process - create ppmi vector to each word and also calc the norm.
         for method in self.stats.word_counts:
             for w in self.stats.word_counts[method]:
-                if self.stats.word_frequency[w] < self.stats.WORD_FREQUENT:
+                if self.stats.word_frequency[w] < self.stats.WORD_FREQUENCY:
                     continue
                 for att in self.stats.word_counts[method][w]:
                     ppmi = self.get_PPMI(u=w, att=att, method=method)
@@ -182,19 +182,19 @@ class WordSimilarities:
         if u is None:
             return self.stats.total_att[method][att] / self.stats.total[method]
         if att is None:
-            return self.stats.total_u[method][u] / self.stats.total[method]
+            return self.stats.total_w[method][u] / self.stats.total[method]
         return self.stats.word_counts[method][u][att] / self.stats.total[method]
 
-    def get_similarities(self, target_word, method):
+    def get_similarities(self, target, method):
         similarity_result = Counter()
 
-        for att, u_att_ppmi in self.word_vecs[method][target_word].items():
+        for att, u_att_ppmi in self.word_vecs[method][target].items():
             for v, v_att_ppmi in self.att_vecs[method][att].items():
                 similarity_result[v] += (u_att_ppmi * v_att_ppmi)
 
         for v in similarity_result:
-            similarity_result[v] /= (self.l2_norm[method][target_word] * self.l2_norm[method][v])
-        del similarity_result[target_word]
+            similarity_result[v] /= (self.l2_norm[method][target] * self.l2_norm[method][v])
+        del similarity_result[target]
         return similarity_result
 
 
@@ -203,12 +203,12 @@ if __name__ == '__main__':
     start_time_total = time.time()
 
     start_time = time.time()
-    file = 'wikipedia.tinysample.trees.lemmatized'
-    stats = WordsStats(window=2).fit(file=file)
+    file_ = 'wikipedia.tinysample.trees.lemmatized'
+    stats = WordsStats(window=2, word_freq=1, attributes_word_freq=1, attributes_limit=100).fit(file=file_)
     print(f'Finished fit stats {(time.time() - start_time):.3f} sec')
 
-    file = 'counts_words.txt'
-    with open(file, 'w') as f:
+    file_ = 'counts_words.txt'
+    with open(file_, 'w') as f:
         f.writelines([f"{w[0]} {w[1]}\n" for w in stats.word_frequency.most_common(n=50)])
 
     start_time = time.time()
@@ -216,14 +216,14 @@ if __name__ == '__main__':
     print(f'Finished fit Similarities {(time.time() - start_time):.3f} sec')
 
     print()
-    for word in target_words:
-        start_time = time.time()
-        sent_similarities = word_sim.get_similarities(target_word=word, method=stats.SENTENCE)
-        window_similarities = word_sim.get_similarities(target_word=word, method=stats.WINDOW)
-        dep_similarities = word_sim.get_similarities(target_word=word, method=stats.DEPENDENCY)
-        print(word)
-        for (sent_word, sent_sim), (win_word, win_sim), (dep_word, dep_sim) in zip(sent_similarities.most_common(20), window_similarities.most_common(20), dep_similarities.most_common(20)):
-            print(f"{sent_word:<20} {sent_sim:.3f}\t{win_word:<20} {win_sim:.3f}\t{dep_word:<20} {dep_sim:.3f}")
-        print('*********')
+    # for word in target_words:
+    #     start_time = time.time()
+    #     sent_similarities = word_sim.get_similarities(target_word=word, method=stats.SENTENCE)
+        # window_similarities = word_sim.get_similarities(target_word=word, method=stats.WINDOW)
+        # dep_similarities = word_sim.get_similarities(target_word=word, method=stats.DEPENDENCY)
+        # print(word)
+        # for (sent_word, sent_sim), (win_word, win_sim), (dep_word, dep_sim) in zip(sent_similarities.most_common(20), window_similarities.most_common(20), dep_similarities.most_common(20)):
+        #     print(f"{sent_word:<20} {sent_sim:.3f}\t{win_word:<20} {win_sim:.3f}\t{dep_word:<20} {dep_sim:.3f}")
+        # print('*********')
 
     print(f'Finished time: {(time.time() - start_time_total):.3f} sec')
