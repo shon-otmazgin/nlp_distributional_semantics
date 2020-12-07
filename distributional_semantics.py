@@ -19,16 +19,22 @@ class WordsStats:
         self.attributes_limit = attributes_limit
 
     def _get_w_hash(self, w):
-        hashed_w = self.str2int[w]
-        if hashed_w == 0:
-            hashed_w = hash(w)
-            self.str2int[w] = hashed_w
-            self.int2str[hashed_w] = w
+        hashed_w = hash(w)
+        if hashed_w in self.int2str.keys():
+            return hashed_w
+
+        self.int2str[hashed_w] = w
+
+        # hashed_w = self.str2int[w]
+        # if hashed_w == 0:
+        #     hashed_w = hash(w)
+        #     self.str2int[w] = hashed_w
+        #     self.int2str[hashed_w] = w
 
         return hashed_w
 
-    def _get_w(self, hashed_w):
-        return self.int2str[hashed_w]
+    # def _get_w(self, hashed_w):
+    #     return self.int2str[hashed_w]
 
     def fit(self, file):
         with open(file, 'r', encoding='utf8') as f:
@@ -55,51 +61,51 @@ class WordsStats:
 
         return self
 
-    # def words_dependency(self, sentence_tokenized):
-    #     content_words, prp_words, noun_words = [], [], []
-    #     for w in sentence_tokenized:
-    #         if w[POSTAG] in CONTENT_WORD_TAGS:
-    #             content_words.append(w)
-    #         elif w[POSTAG] in PREPOSITION:
-    #             prp_words.append(w)
-    #         if w[POSTAG] in NOUNS:
-    #             noun_words.append(w)
-    # 
-    #     for w in content_words:
-    #         w_head = sentence_tokenized[int(w[HEAD])-1] if int(w[HEAD]) > 0 else None
-    #         if w_head is None:
-    #             continue
-    # 
-    #         hashed_w = self._get_w_hash(w[LEMMA])
-    #         # case 1
-    #         for prp in prp_words:
-    #             if prp[HEAD] == w[ID]:
-    #                 for noun in noun_words:
-    #                     if noun[HEAD] == prp[ID]:
-    #                         label = w[DEPREL] + " " + prp[LEMMA]
-    # 
-    #                         feature1 = (noun[LEMMA], label, self.OUT)
-    #                         feature2 = (w[LEMMA], label, self.IN)
-    # 
-    #                         hashed_noun = self._get_w_hash(noun[LEMMA])
-    #                         self.word_counts[self.DEPENDENCY][hashed_w][feature1] += 1
-    #                         self.word_counts[self.DEPENDENCY][hashed_noun][feature2] += 1
-    # 
-    #         if w_head[POSTAG] in PREPOSITION: # case 2
-    #             prp_head = sentence_tokenized[int(w_head[HEAD])-1]
-    #             label = w_head[DEPREL] + " " + w_head[LEMMA]
-    # 
-    #             feature1 = (prp_head[LEMMA], label, self.IN)
-    #             feature2 = (w[LEMMA], label, self.OUT)
-    # 
-    #             hashed_prp = self._get_w_hash(prp_head[LEMMA])
-    #             self.word_counts[self.DEPENDENCY][hashed_w][feature1] += 1
-    #             self.word_counts[self.DEPENDENCY][hashed_prp][feature2] += 1
-    # 
-    #         else:
-    #             self.word_counts[self.DEPENDENCY][hashed_w][(w_head[LEMMA], w[DEPREL], self.IN)] += 1
-    #             hashed_w_head = self._get_w_hash(w_head[LEMMA])
-    #             self.word_counts[self.DEPENDENCY][hashed_w_head][(w[LEMMA], w[DEPREL], self.OUT)] += 1
+    def words_dependency(self, sentence_tokenized):
+        content_words, prp_words, noun_words = [], [], []
+        for w in sentence_tokenized:
+            if w[POSTAG] in CONTENT_WORD_TAGS:
+                content_words.append(w)
+            elif w[POSTAG] in PREPOSITION:
+                prp_words.append(w)
+            if w[POSTAG] in NOUNS:
+                noun_words.append(w)
+
+        for w in content_words:
+            w_head = sentence_tokenized[int(w[HEAD])-1] if int(w[HEAD]) > 0 else None
+            if w_head is None:
+                continue
+
+            hashed_w = self._get_w_hash(w[LEMMA])
+            # case 1
+            for prp in prp_words:
+                if prp[HEAD] == w[ID]:
+                    for noun in noun_words:
+                        if noun[HEAD] == prp[ID]:
+                            label = w[DEPREL] + " " + prp[LEMMA]
+
+                            feature1 = (noun[LEMMA], label, self.OUT)
+                            feature2 = (w[LEMMA], label, self.IN)
+
+                            hashed_noun = self._get_w_hash(noun[LEMMA])
+                            self.word_counts[self.DEPENDENCY][hashed_w][feature1] += 1
+                            self.word_counts[self.DEPENDENCY][hashed_noun][feature2] += 1
+
+            if w_head[POSTAG] in PREPOSITION: # case 2
+                prp_head = sentence_tokenized[int(w_head[HEAD])-1]
+                label = w_head[DEPREL] + " " + w_head[LEMMA]
+
+                feature1 = (prp_head[LEMMA], label, self.IN)
+                feature2 = (w[LEMMA], label, self.OUT)
+
+                hashed_prp = self._get_w_hash(prp_head[LEMMA])
+                self.word_counts[self.DEPENDENCY][hashed_w][feature1] += 1
+                self.word_counts[self.DEPENDENCY][hashed_prp][feature2] += 1
+
+            else:
+                self.word_counts[self.DEPENDENCY][hashed_w][(w_head[LEMMA], w[DEPREL], self.IN)] += 1
+                hashed_w_head = self._get_w_hash(w_head[LEMMA])
+                self.word_counts[self.DEPENDENCY][hashed_w_head][(w[LEMMA], w[DEPREL], self.OUT)] += 1
 
     def filter_stats(self):
         """
@@ -111,11 +117,10 @@ class WordsStats:
         for method in self.word_counts:
             for hashed_w in self.word_counts[method]:
                 c = Counter()
-                for hashed_att, count in self.word_counts[method][hashed_w].most_common(n=self.attributes_limit):
-                    att = self._get_w(hashed_att)
-                    hashed_w_att = self._get_w_hash(att[0])
-                    if self.word_frequency[hashed_w_att] >= self.attributes_word_freq:
-                        c[hashed_att] = count
+                for att, count in self.word_counts[method][hashed_w].most_common(n=self.attributes_limit):
+                    hashed_co_word = att[0]
+                    if self.word_frequency[hashed_co_word] >= self.attributes_word_freq:
+                        c[att] = count
                 self.word_counts[method][hashed_w] = c
 
     def words_co_occurring(self, tokenized_sentence):
@@ -127,13 +132,13 @@ class WordsStats:
             high = i + self.window + 1 if i + self.window + 1 <= len(content_words) else len(content_words)
             window = content_words[low:i] + content_words[i+1:high]
             for co_word in window:
-                hashed_feature = self._get_w_hash((co_word,))
-                self.word_counts[WINDOW][hashed_w][hashed_feature] += 1
+                hashed_attribute = (self._get_w_hash(co_word), )
+                self.word_counts[WINDOW][hashed_w][hashed_attribute] += 1
 
             sentence = content_words[0:i] + content_words[i+1:]
             for co_word in sentence:
-                hashed_co_word = self._get_w_hash((co_word,))
-                self.word_counts[SENTENCE][hashed_w][hashed_co_word] += 1
+                hashed_attribute = (self._get_w_hash(co_word), )
+                self.word_counts[SENTENCE][hashed_w][hashed_attribute] += 1
 
             self.word_frequency[hashed_w] += 1
 
@@ -202,7 +207,8 @@ if __name__ == '__main__':
     start_time_total = time.time()
 
     start_time = time.time()
-    file_ = 'wikipedia.tinysample.trees.lemmatized'
+    # file_ = 'wikipedia.tinysample.trees.lemmatized'
+    file_ = 'wikipedia.sample.trees.lemmatized'
     stats = WordsStats(window=2, attributes_word_freq=1, attributes_limit=100).fit(file=file_)
     print(f'Finished fit stats {(time.time() - start_time):.3f} sec')
 
@@ -226,3 +232,4 @@ if __name__ == '__main__':
     #     print('*********')
     #
     # print(f'Finished time: {(time.time() - start_time_total):.3f} sec')
+# 4.2 ±  MEM
