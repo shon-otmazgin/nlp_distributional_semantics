@@ -6,7 +6,7 @@ from utils import *
 
 
 class WordsStats:
-    def __init__(self, window, word_freq, attributes_word_freq, attributes_limit):
+    def __init__(self, window, attributes_word_freq, attributes_limit):
         self.window = window
         self.word_frequency = Counter()
         self.word_counts = defaultdict(lambda: defaultdict(Counter))   # word_counts[method][word][attribute] = #freq
@@ -15,7 +15,6 @@ class WordsStats:
         self.total_att = {SENTENCE: defaultdict(lambda: 0), WINDOW: defaultdict(lambda: 0), DEPENDENCY: defaultdict(lambda: 0)}
         self.str2int = defaultdict(lambda: 0)
         self.int2str = {}
-        self.word_freq = word_freq
         self.attributes_word_freq = attributes_word_freq
         self.attributes_limit = attributes_limit
 
@@ -43,16 +42,15 @@ class WordsStats:
         self.filter_stats()
 
         for method in self.word_counts:
-            for w, w_c in self.word_counts[method].items():
+            for hashed_w, w_c in self.word_counts[method].items():
+
                 # cache p(*,*)
                 self.total[method] += sum(w_c.values())
                 # cache p(u,*)
-                hashed_w = self._get_w_hash(w)
                 self.total_w[method][hashed_w] += sum(w_c.values())
 
                 # cache p(*,att)
-                for att, att_c in w_c.items():
-                    hashed_att = self._get_w_hash(att)
+                for hashed_att, att_c in w_c.items():
                     self.total_att[method][hashed_att] += att_c
 
         return self
@@ -111,9 +109,8 @@ class WordsStats:
         frequent of the attribute's word (location 0 in the tuple) should be grater than 75
         """
         for method in self.word_counts:
-            for w in self.word_counts[method]:
+            for hashed_w in self.word_counts[method]:
                 c = Counter()
-                hashed_w = self._get_w_hash(w)
                 for hashed_att, count in self.word_counts[method][hashed_w].most_common(n=self.attributes_limit):
                     att = self._get_w(hashed_att)
                     hashed_w_att = self._get_w_hash(att[0])
@@ -142,34 +139,36 @@ class WordsStats:
 
 
 class WordSimilarities:
-    def __init__(self, stats: WordsStats):
+    def __init__(self, word_freq, stats: WordsStats):
         self.stats = stats
         self.l2_norm = defaultdict(lambda: defaultdict(lambda: 0.))
         self.word_vecs = defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: 0))) # for efficient cosine similarity
         self.att_vecs = defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: 0)))  # for efficient cosine similarity
+        self.word_freq = word_freq
 
     def fit(self):
         for method in self.stats.word_counts:
             p_all, p_u, p_att = 0, 0, Counter()
-            for w, counter in self.stats.word_counts[method].items():
-                for att in counter:
-                    if att not in p_att:
-                        p_att[att] += self.p(att=att, method=method)
-                    p_all += self.p(u=w, att=att, method=method)
-                p_u += self.p(u=w, method=method)
+            for hashed_w, counter in self.stats.word_counts[method].items():
+                for hashed_att in counter:
+                    if hashed_att not in p_att:
+                        p_att[hashed_att] += self.p(att=hashed_att, method=method)
+                    p_all += self.p(u=hashed_w, att=hashed_att, method=method)
+                p_u += self.p(u=hashed_w, method=method)
             print(f'method: {method} p1: {p_all} p1: {p_u} p1: {sum(p_att.values())}')
 
         # pre process - create ppmi vector to each word and also calc the norm.
         for method in self.stats.word_counts:
-            for w in self.stats.word_counts[method]:
-                if self.stats.word_frequency[w] < self.stats.WORD_FREQUENCY:
+            for hashed_w in self.stats.word_counts[method]:
+                if self.stats.word_frequency[hashed_w] < self.word_freq:
                     continue
-                for att in self.stats.word_counts[method][w]:
-                    ppmi = self.get_PPMI(u=w, att=att, method=method)
-                    self.l2_norm[method][w] += ppmi**2
-                    self.word_vecs[method][w][att] = ppmi
-                    self.att_vecs[method][att][w] = ppmi
-                self.l2_norm[method][w] = math.sqrt(self.l2_norm[method][w])
+                for hashed_att in self.stats.word_counts[method][hashed_w]:
+
+                    ppmi = self.get_PPMI(u=hashed_w, att=hashed_att, method=method)
+                    self.l2_norm[method][hashed_w] += ppmi**2
+                    self.word_vecs[method][hashed_w][hashed_att] = ppmi
+                    self.att_vecs[method][hashed_att][hashed_w] = ppmi
+                self.l2_norm[method][hashed_w] = math.sqrt(self.l2_norm[method][hashed_w])
         return self
 
     def get_PPMI(self, u, att, method):
@@ -204,7 +203,7 @@ if __name__ == '__main__':
 
     start_time = time.time()
     file_ = 'wikipedia.tinysample.trees.lemmatized'
-    stats = WordsStats(window=2, word_freq=1, attributes_word_freq=1, attributes_limit=100).fit(file=file_)
+    stats = WordsStats(window=2, attributes_word_freq=1, attributes_limit=100).fit(file=file_)
     print(f'Finished fit stats {(time.time() - start_time):.3f} sec')
 
     file_ = 'counts_words.txt'
@@ -212,18 +211,18 @@ if __name__ == '__main__':
         f.writelines([f"{w[0]} {w[1]}\n" for w in stats.word_frequency.most_common(n=50)])
 
     start_time = time.time()
-    word_sim = WordSimilarities(stats=stats).fit()
+    word_sim = WordSimilarities(word_freq=1, stats=stats).fit()
     print(f'Finished fit Similarities {(time.time() - start_time):.3f} sec')
-
-    print("hey there, I'm a change!")
+    #
+    # print("hey there, I'm a change!")
     # for word in target_words:
     #     start_time = time.time()
-    #     sent_similarities = word_sim.get_similarities(target_word=word, method=stats.SENTENCE)
-        # window_similarities = word_sim.get_similarities(target_word=word, method=stats.WINDOW)
-        # dep_similarities = word_sim.get_similarities(target_word=word, method=stats.DEPENDENCY)
-        # print(word)
-        # for (sent_word, sent_sim), (win_word, win_sim), (dep_word, dep_sim) in zip(sent_similarities.most_common(20), window_similarities.most_common(20), dep_similarities.most_common(20)):
-        #     print(f"{sent_word:<20} {sent_sim:.3f}\t{win_word:<20} {win_sim:.3f}\t{dep_word:<20} {dep_sim:.3f}")
-        # print('*********')
-
-    print(f'Finished time: {(time.time() - start_time_total):.3f} sec')
+    #     sent_similarities = word_sim.get_similarities(target=word, method=SENTENCE)
+    #     window_similarities = word_sim.get_similarities(target=word, method=WINDOW)
+    #     # dep_similarities = word_sim.get_similarities(target_word=word, method=stats.DEPENDENCY)
+    #     print(word)
+    #     for (sent_word, sent_sim), (win_word, win_sim), (dep_word, dep_sim) in zip(sent_similarities.most_common(20), window_similarities.most_common(20)):#, dep_similarities.most_common(20)):
+    #         print(f"{sent_word:<20} {sent_sim:.3f}\t{win_word:<20} {win_sim:.3f}")#\t{dep_word:<20} {dep_sim:.3f}")
+    #     print('*********')
+    #
+    # print(f'Finished time: {(time.time() - start_time_total):.3f} sec')
