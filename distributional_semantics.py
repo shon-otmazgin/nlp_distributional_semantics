@@ -54,6 +54,10 @@ class WordsStats:
 
         return self
 
+    @staticmethod
+    def is_content_word(w):
+        return w[POSTAG] in CONTENT_WORD_TAGS and w[LEMMA].lower() not in STOP_WORDS
+
     def set_attribute(self, w, att, method):
         hashed_w = self._get_hash(s=w)
         hashed_att = self._get_hash(s=att)
@@ -62,7 +66,7 @@ class WordsStats:
     def words_dependency(self, sentence_tokenized):
         content_words, prep_words = [], []
         for w in sentence_tokenized:
-            if w[POSTAG] in CONTENT_WORD_TAGS and w[LEMMA].lower() not in STOP_WORDS:
+            if WordsStats.is_content_word(w=w):
                 content_words.append(w)
             if w[POSTAG] in PREPOSITION:
                 prep_words.append(w)
@@ -71,7 +75,7 @@ class WordsStats:
             label, co_word = None, None
             parent_w = sentence_tokenized[int(w[HEAD]) - 1] if int(w[HEAD]) > 0 else None
 
-            if parent_w and parent_w[LEMMA].lower() not in STOP_WORDS:
+            if parent_w and WordsStats.is_content_word(w=parent_w):
                 label = w[DEPREL]
                 co_word = parent_w[LEMMA]
 
@@ -109,7 +113,7 @@ class WordsStats:
                 self.word_counts[method][hashed_w] = c
 
     def words_co_occurring(self, tokenized_sentence):
-        content_words = [row[LEMMA] for row in tokenized_sentence if row[POSTAG] in CONTENT_WORD_TAGS and row[LEMMA].lower() not in STOP_WORDS]
+        content_words = [row[LEMMA] for row in tokenized_sentence if WordsStats.is_content_word(w=row)]
         for i, w in enumerate(content_words):
             low = i - self.window if i >= self.window else 0
             high = i + self.window + 1 if i + self.window + 1 <= len(content_words) else len(content_words)
@@ -143,7 +147,7 @@ class WordSimilarities:
                         p_att[att] += self.p(att=att, method=method)
                     p_all += self.p(u=w, att=att, method=method)
                 p_u += self.p(u=w, method=method)
-            print(f'method: {method} p1: {p_all} p1: {p_u} p1: {sum(p_att.values())}')
+            print(f'{method:<15} p1: {p_all:<20} p1: {p_u:<20} p1: {sum(p_att.values()):<20}')
 
         # pre process - create ppmi vector to each word and also calc the norm.
         for method in self.stats.word_counts:
@@ -198,8 +202,8 @@ if __name__ == '__main__':
     start_time_total = time.time()
 
     start_time = time.time()
-    file_ = 'wikipedia.tinysample.trees.lemmatized'
-    stats = WordsStats(window=2, attributes_word_freq=1, attributes_limit=100).fit(file=file_)
+    file_ = 'wikipedia.sample.trees.lemmatized'
+    stats = WordsStats(window=2, attributes_word_freq=75, attributes_limit=100).fit(file=file_)
     print(f'Finished fit stats {(time.time() - start_time):.3f} sec')
 
     file_ = 'counts_words.txt'
@@ -214,17 +218,25 @@ if __name__ == '__main__':
         f.writelines([f"{stats.int2str[dep]} {count}\n" for dep, count in dep_context.most_common(n=50)])
 
     start_time = time.time()
-    word_sim = WordSimilarities(word_freq=1, stats=stats, smooth_ppmi=True).fit()
+    word_sim = WordSimilarities(word_freq=100, stats=stats, smooth_ppmi=True).fit()
     print(f'Finished fit Similarities {(time.time() - start_time):.3f} sec')
 
-    for word in target_words:
-        sent_sim = word_sim.get_cosine_similarities(target=word, method=SENTENCE).most_common(20)
-        win_sim = word_sim.get_cosine_similarities(target=word, method=WINDOW).most_common(20)
-        dep_sim = word_sim.get_cosine_similarities(target=word, method=DEPENDENCY).most_common(20)
-        print(word)
-        print(len(sent_sim), len(win_sim), len(dep_sim))
-        for (sent_w, sent_s), (win_w, win_s), (dep_w, dep_s) in zip(sent_sim, win_sim,  dep_sim):
-            print(f"{sent_w:<20} {sent_s:.3f}\t{win_w:<20} {win_s:.3f}\t{dep_w:<20} {dep_s:.3f}")
-        print('*********')
+    file_ = 'top20.txt'
+    with open(file_, 'w') as f:
+        for word in target_words:
+            sent_sim = word_sim.get_cosine_similarities(target=word, method=SENTENCE).most_common(20)
+            win_sim = word_sim.get_cosine_similarities(target=word, method=WINDOW).most_common(20)
+            dep_sim = word_sim.get_cosine_similarities(target=word, method=DEPENDENCY).most_common(20)
+            print(word)
+            print(len(sent_sim), len(win_sim), len(dep_sim))
+
+            f.write(f'{word}\n')
+            for (sent_w, sent_s), (win_w, win_s), (dep_w, dep_s) in zip(sent_sim, win_sim,  dep_sim):
+                print(f"{sent_w:<20} {sent_s:.3f}\t{win_w:<20} {win_s:.3f}\t{dep_w:<20} {dep_s:.3f}")
+
+                f.write(f"{sent_w:<20} {win_w:<20} {dep_w:<20}\n")
+
+            print(f'*********')
+            f.write(f'*********\n')
 
     print(f'Finished time: {(time.time() - start_time_total):.3f} sec')
