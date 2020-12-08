@@ -18,17 +18,16 @@ class WordsStats:
         self.attributes_word_freq = attributes_word_freq
         self.attributes_limit = attributes_limit
 
-    def _get_w_hash(self, w):
-        hashed_w = self.str2int[w]
-        if hashed_w == 0:
-            hashed_w = hash(w)
-            self.str2int[w] = hashed_w
-            self.int2str[hashed_w] = w
+    def _get_hash(self, s):
+        hashed_s = self.str2int[s]
+        if hashed_s == 0:
+            hashed_s = hash(s)
+            self.str2int[s] = hashed_s
+            self.int2str[hashed_s] = s
+        return hashed_s
 
-        return hashed_w
-
-    def _get_w(self, hashed_w):
-        return self.int2str[hashed_w]
+    def _get_s(self, hashed_s):
+        return self.int2str[hashed_s]
 
     def fit(self, file):
         with open(file, 'r', encoding='utf8') as f:
@@ -54,6 +53,11 @@ class WordsStats:
                     self.total_att[method][hashed_att] += att_c
 
         return self
+
+    def set_attribute(self, w, att, method):
+        hashed_w = self._get_hash(s=w)
+        hashed_att = self._get_hash(s=att)
+        self.word_counts[method][hashed_w][hashed_att] += 1
 
     # def words_dependency(self, sentence_tokenized):
     #     content_words, prp_words, noun_words = [], [], []
@@ -112,8 +116,8 @@ class WordsStats:
             for hashed_w in self.word_counts[method]:
                 c = Counter()
                 for hashed_att, count in self.word_counts[method][hashed_w].most_common(n=self.attributes_limit):
-                    att = self._get_w(hashed_att)
-                    hashed_w_att = self._get_w_hash(att[0])
+                    att = self._get_s(hashed_att)
+                    hashed_w_att = self._get_hash(att[0])
                     if self.word_frequency[hashed_w_att] >= self.attributes_word_freq:
                         c[hashed_att] = count
                 self.word_counts[method][hashed_w] = c
@@ -121,18 +125,18 @@ class WordsStats:
     def words_co_occurring(self, tokenized_sentence):
         content_words = [row[LEMMA] for row in tokenized_sentence if row[POSTAG] in CONTENT_WORD_TAGS]
         for i, w in enumerate(content_words):
-            hashed_w = self._get_w_hash(w)
+            hashed_w = self._get_hash(w)
 
             low = i - self.window if i >= self.window else 0
             high = i + self.window + 1 if i + self.window + 1 <= len(content_words) else len(content_words)
             window = content_words[low:i] + content_words[i+1:high]
             for co_word in window:
-                hashed_feature = self._get_w_hash((co_word,))
+                hashed_feature = self._get_hash((co_word,))
                 self.word_counts[WINDOW][hashed_w][hashed_feature] += 1
 
             sentence = content_words[0:i] + content_words[i+1:]
             for co_word in sentence:
-                hashed_co_word = self._get_w_hash((co_word,))
+                hashed_co_word = self._get_hash((co_word,))
                 self.word_counts[SENTENCE][hashed_w][hashed_co_word] += 1
 
             self.word_frequency[hashed_w] += 1
