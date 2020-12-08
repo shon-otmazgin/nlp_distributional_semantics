@@ -70,11 +70,11 @@ class WordsStats:
         def build_content_word(w):
             parent_w = sentence_tokenized[int(w[HEAD]) - 1] if int(w[HEAD]) > 0 else None
             if (parent_w is not None) and (parent_w in CONTENT_WORD_TAGS):
-                att_in = (parent_w[LEMMA], w[DEPREL], IN)
-                att_out = (w[LEMMA], w[DEPREL], OUT)
+                att_w = (parent_w[LEMMA], w[DEPREL], IN)
+                self.set_attribute(w=w[LEMMA], att=att_w, method=DEPENDENCY)
 
-                self.set_attribute(w=w[LEMMA], att=att_in, method=DEPENDENCY)
-                self.set_attribute(w=parent_w[LEMMA], att=att_out, method=DEPENDENCY)
+                att_co_w = (w[LEMMA], w[DEPREL], OUT)
+                self.set_attribute(w=parent_w[LEMMA], att=att_co_w, method=DEPENDENCY)
 
         def build_with_prep_word(w):
             parent_w = sentence_tokenized[int(w[HEAD]) - 1] if int(w[HEAD]) > 0 else None
