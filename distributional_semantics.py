@@ -56,7 +56,7 @@ class WordsStats:
 
     @staticmethod
     def is_content_word(w):
-        return w[POSTAG] in CONTENT_WORD_TAGS and w[LEMMA].lower() not in STOP_WORDS
+        return w[POSTAG] in CONTENT_WORD_TAGS and w[LEMMA] not in STOP_WORDS
 
     def set_attribute(self, w, att, method):
         hashed_w = self._get_hash(s=w)
