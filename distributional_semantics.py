@@ -33,6 +33,7 @@ class WordsStats:
         with open(file, 'r', encoding='utf8') as f:
             sentences = [list(group) for k, group in groupby(f.readlines(), lambda x: x == '\n') if not k]
 
+        print(f'Fitting {len(sentences)} sentences')
         for sent in sentences:
             tokenized_sent = [{h: v for h, v in zip(FIELDS_H, token.rstrip('\n').split('\t'))} for token in sent]
             self.words_co_occurring(tokenized_sentence=tokenized_sent)
@@ -51,7 +52,6 @@ class WordsStats:
                 # cache p(*,att)
                 for hashed_att, att_c in w_c.items():
                     self.total_att[method][hashed_att] += att_c
-
         return self
 
     @staticmethod
@@ -202,8 +202,8 @@ if __name__ == '__main__':
     start_time_total = time.time()
 
     start_time = time.time()
-    file_ = 'wikipedia.sample.trees.lemmatized'
-    stats = WordsStats(window=2, attributes_word_freq=75, attributes_limit=100).fit(file=file_)
+    file_ = 'wikipedia.tinysample.trees.lemmatized'
+    stats = WordsStats(window=2, attributes_word_freq=1, attributes_limit=100).fit(file=file_)
     print(f'Finished fit stats {(time.time() - start_time):.3f} sec')
 
     file_ = 'counts_words.txt'
@@ -218,7 +218,7 @@ if __name__ == '__main__':
         f.writelines([f"{stats.int2str[dep]} {count}\n" for dep, count in dep_context.most_common(n=50)])
 
     start_time = time.time()
-    word_sim = WordSimilarities(word_freq=100, stats=stats, smooth_ppmi=True).fit()
+    word_sim = WordSimilarities(word_freq=1, stats=stats, smooth_ppmi=True).fit()
     print(f'Finished fit Similarities {(time.time() - start_time):.3f} sec')
 
     file_ = 'top20.txt'
