@@ -62,36 +62,34 @@ class WordsStats:
     def words_dependency(self, sentence_tokenized):
         content_words, prep_words = [], []
         for w in sentence_tokenized:
-            if w[POSTAG] in CONTENT_WORD_TAGS:
+            if w[LEMMA].lower() not in STOP_WORDS:
                 content_words.append(w)
-            elif w[POSTAG] in PREPOSITION:
+            if w[POSTAG] in PREPOSITION:
                 prep_words.append(w)
 
-        def build_content_word(w):
+        def build_dependency_attribute(w):
+            label, co_word = None, None
             parent_w = sentence_tokenized[int(w[HEAD]) - 1] if int(w[HEAD]) > 0 else None
-            if (parent_w is not None) and (parent_w in CONTENT_WORD_TAGS):
-                att_w = (parent_w[LEMMA], w[DEPREL], IN)
+
+            if parent_w and parent_w[LEMMA].lower() not in STOP_WORDS:
+                label = w[DEPREL]
+                co_word = parent_w[LEMMA]
+
+            elif parent_w in prep_words:
+                parent_parent_w = sentence_tokenized[int(parent_w[HEAD]) - 1] if int(parent_w[HEAD]) > 0 else None
+                if parent_parent_w:
+                    label = f'{parent_w[DEPREL]}:{parent_w[LEMMA]}'
+                    co_word = parent_parent_w[LEMMA]
+
+            if label and co_word:
+                att_w = (co_word, label, IN)
                 self.set_attribute(w=w[LEMMA], att=att_w, method=DEPENDENCY)
 
-                att_co_w = (w[LEMMA], w[DEPREL], OUT)
-                self.set_attribute(w=parent_w[LEMMA], att=att_co_w, method=DEPENDENCY)
-
-        def build_with_prep_word(w):
-            parent_w = sentence_tokenized[int(w[HEAD]) - 1] if int(w[HEAD]) > 0 else None
-            if (parent_w is not None) and (parent_w in prep_words):
-                parent_parent_w = sentence_tokenized[int(parent_w[HEAD]) - 1] if int(parent_w[HEAD]) > 0 else None
-                if parent_parent_w is not None:
-                    label = f'{parent_w[DEPREL]}:{parent_w[LEMMA]}'
-
-                    att_w = (parent_parent_w[LEMMA], label, IN)
-                    self.set_attribute(w=w[LEMMA], att=att_w, method=DEPENDENCY)
-
-                    att_co_w = (w[LEMMA], label, OUT)
-                    self.set_attribute(w=parent_parent_w[LEMMA], att=att_co_w, method=DEPENDENCY)
+                att_co_w = (w[LEMMA], label, OUT)
+                self.set_attribute(w=co_word, att=att_co_w, method=DEPENDENCY)
 
         for w in content_words:
-            build_content_word(w)
-            build_with_prep_word(w)
+            build_dependency_attribute(w)
 
     def filter_stats(self):
         """
@@ -111,22 +109,19 @@ class WordsStats:
                 self.word_counts[method][hashed_w] = c
 
     def words_co_occurring(self, tokenized_sentence):
-        content_words = [row[LEMMA] for row in tokenized_sentence if row[POSTAG] in CONTENT_WORD_TAGS]
+        content_words = [row[LEMMA] for row in tokenized_sentence if row[LEMMA].lower() not in STOP_WORDS]
         for i, w in enumerate(content_words):
-            hashed_w = self._get_hash(w)
-
             low = i - self.window if i >= self.window else 0
             high = i + self.window + 1 if i + self.window + 1 <= len(content_words) else len(content_words)
             window = content_words[low:i] + content_words[i+1:high]
             for co_word in window:
-                hashed_feature = self._get_hash((co_word,))
-                self.word_counts[WINDOW][hashed_w][hashed_feature] += 1
+                self.set_attribute(w=w, att=(co_word,), method=WINDOW)
 
             sentence = content_words[0:i] + content_words[i+1:]
             for co_word in sentence:
-                hashed_co_word = self._get_hash((co_word,))
-                self.word_counts[SENTENCE][hashed_w][hashed_co_word] += 1
+                self.set_attribute(w=w, att=(co_word,), method=SENTENCE)
 
+            hashed_w = self._get_hash(s=w)
             self.word_frequency[hashed_w] += 1
 
 
@@ -142,26 +137,26 @@ class WordSimilarities:
     def fit(self):
         for method in self.stats.word_counts:
             p_all, p_u, p_att = 0, 0, Counter()
-            for hashed_w, counter in self.stats.word_counts[method].items():
-                for hashed_att in counter:
-                    if hashed_att not in p_att:
-                        p_att[hashed_att] += self.p(att=hashed_att, method=method)
-                    p_all += self.p(u=hashed_w, att=hashed_att, method=method)
-                p_u += self.p(u=hashed_w, method=method)
+            for w, counter in self.stats.word_counts[method].items():
+                for att in counter:
+                    if att not in p_att:
+                        p_att[att] += self.p(att=att, method=method)
+                    p_all += self.p(u=w, att=att, method=method)
+                p_u += self.p(u=w, method=method)
             print(f'method: {method} p1: {p_all} p1: {p_u} p1: {sum(p_att.values())}')
 
         # pre process - create ppmi vector to each word and also calc the norm.
         for method in self.stats.word_counts:
-            for hashed_w in self.stats.word_counts[method]:
-                if self.stats.word_frequency[hashed_w] < self.word_freq:
+            for w in self.stats.word_counts[method]:
+                if self.stats.word_frequency[w] < self.word_freq:
                     continue
-                for hashed_att in self.stats.word_counts[method][hashed_w]:
+                for att in self.stats.word_counts[method][w]:
+                    ppmi = self.get_PPMI(u=w, att=att, method=method)
+                    self.l2_norm[method][w] += ppmi**2
+                    self.word_vecs[method][w][att] = ppmi
+                    self.att_vecs[method][att][w] = ppmi
 
-                    ppmi = self.get_PPMI(u=hashed_w, att=hashed_att, method=method)
-                    self.l2_norm[method][hashed_w] += ppmi**2
-                    self.word_vecs[method][hashed_w][hashed_att] = ppmi
-                    self.att_vecs[method][hashed_att][hashed_w] = ppmi
-                self.l2_norm[method][hashed_w] = math.sqrt(self.l2_norm[method][hashed_w])
+                self.l2_norm[method][w] = math.sqrt(self.l2_norm[method][w])
         return self
 
     def get_PPMI(self, u, att, method):
@@ -191,11 +186,10 @@ class WordSimilarities:
             for v, v_att_ppmi in self.att_vecs[method][att].items():
                 hashed_similarity_result[v] += (u_att_ppmi * v_att_ppmi)
 
-        for v in hashed_similarity_result:
-            hashed_similarity_result[v] /= (self.l2_norm[method][hashed_target] * self.l2_norm[method][v])
         del hashed_similarity_result[hashed_target]
+
         for v, sim in hashed_similarity_result.items():
-            similarity_result[self.stats.int2str[v]] = sim
+            similarity_result[self.stats.int2str[v]] = sim / (self.l2_norm[method][hashed_target] * self.l2_norm[method][v])
         return similarity_result
 
 
@@ -217,12 +211,12 @@ if __name__ == '__main__':
     print(f'Finished fit Similarities {(time.time() - start_time):.3f} sec')
 
     for word in target_words:
-        start_time = time.time()
-        sent_sim = word_sim.get_cosine_similarities(target=word, method=SENTENCE)
-        win_sim = word_sim.get_cosine_similarities(target=word, method=WINDOW)
-        dep_sim = word_sim.get_cosine_similarities(target=word, method=DEPENDENCY)
+        sent_sim = word_sim.get_cosine_similarities(target=word, method=SENTENCE).most_common(20)
+        win_sim = word_sim.get_cosine_similarities(target=word, method=WINDOW).most_common(20)
+        dep_sim = word_sim.get_cosine_similarities(target=word, method=DEPENDENCY).most_common(20)
         print(word)
-        for (sent_w, sent_s), (win_w, win_s), (dep_w, dep_s) in zip(sent_sim.most_common(20), win_sim.most_common(20),  dep_sim.most_common(20)):
+        print(len(sent_sim), len(win_sim), len(dep_sim))
+        for (sent_w, sent_s), (win_w, win_s), (dep_w, dep_s) in zip(sent_sim, win_sim,  dep_sim):
             print(f"{sent_w:<20} {sent_s:.3f}\t{win_w:<20} {win_s:.3f}\t{dep_w:<20} {dep_s:.3f}")
         print('*********')
 
