@@ -209,16 +209,16 @@ if __name__ == '__main__':
     stats = WordsStats(window=2, attributes_word_freq=75, attributes_limit=100).fit(file=file_)
     print(f'Finished fit stats {(time.time() - start_time):.3f} sec')
 
-    file_ = 'counts_words.txt'
-    with open(file_, 'w') as f:
-        f.writelines([f"{stats.int2str[w]} {count}\n" for w, count in stats.word_frequency.most_common(n=50)])
-
-    file_ = 'counts_contexts_dep.txt'
-    with open(file_, 'w') as f:
-        dep_context = Counter()
-        for w, c in stats.word_counts[DEPENDENCY].items():
-            dep_context += c
-        f.writelines([f"{stats.int2str[dep]} {count}\n" for dep, count in dep_context.most_common(n=50)])
+    # file_ = 'counts_words.txt'
+    # with open(file_, 'w') as f:
+    #     f.writelines([f"{stats.int2str[w]} {count}\n" for w, count in stats.word_frequency.most_common(n=50)])
+    #
+    # file_ = 'counts_contexts_dep.txt'
+    # with open(file_, 'w') as f:
+    #     dep_context = Counter()
+    #     for w, c in stats.word_counts[DEPENDENCY].items():
+    #         dep_context += c
+    #     f.writelines([f"{stats.int2str[dep]} {count}\n" for dep, count in dep_context.most_common(n=50)])
 
     start_time = time.time()
     word_sim = WordSimilarities(word_freq=100, stats=stats, smooth_ppmi=True).fit()
