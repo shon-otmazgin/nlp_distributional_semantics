@@ -176,7 +176,7 @@ class WordSimilarities:
             return self.stats.total_w[method][u] / self.stats.total[method]
         return self.stats.word_counts[method][u][att] / self.stats.total[method]
 
-    def get_similarities(self, target, method):
+    def get_cosine_similarities(self, target, method):
         similarity_result = Counter()
 
         for att, u_att_ppmi in self.word_vecs[method][target].items():
@@ -205,16 +205,15 @@ if __name__ == '__main__':
     start_time = time.time()
     word_sim = WordSimilarities(word_freq=1, stats=stats).fit()
     print(f'Finished fit Similarities {(time.time() - start_time):.3f} sec')
-    #
-    # print("hey there, I'm a change!")
-    # for word in target_words:
-    #     start_time = time.time()
-    #     sent_similarities = word_sim.get_similarities(target=word, method=SENTENCE)
-    #     window_similarities = word_sim.get_similarities(target=word, method=WINDOW)
-    #     # dep_similarities = word_sim.get_similarities(target_word=word, method=stats.DEPENDENCY)
-    #     print(word)
-    #     for (sent_word, sent_sim), (win_word, win_sim), (dep_word, dep_sim) in zip(sent_similarities.most_common(20), window_similarities.most_common(20)):#, dep_similarities.most_common(20)):
-    #         print(f"{sent_word:<20} {sent_sim:.3f}\t{win_word:<20} {win_sim:.3f}")#\t{dep_word:<20} {dep_sim:.3f}")
-    #     print('*********')
-    #
-    # print(f'Finished time: {(time.time() - start_time_total):.3f} sec')
+
+    for word in target_words:
+        start_time = time.time()
+        sent_similarities = word_sim.get_cosine_similarities(target=word, method=SENTENCE)
+        window_similarities = word_sim.get_cosine_similarities(target=word, method=WINDOW)
+        # dep_similarities = word_sim.get_similarities(target_word=word, method=stats.DEPENDENCY)
+        print(word)
+        for (sent_word, sent_sim), (win_word, win_sim), (dep_word, dep_sim) in zip(sent_similarities.most_common(20), window_similarities.most_common(20)):#, dep_similarities.most_common(20)):
+            print(f"{sent_word:<20} {sent_sim:.3f}\t{win_word:<20} {win_sim:.3f}")#\t{dep_word:<20} {dep_sim:.3f}")
+        print('*********')
+
+    print(f'Finished time: {(time.time() - start_time_total):.3f} sec')
