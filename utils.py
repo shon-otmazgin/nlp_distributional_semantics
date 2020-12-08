@@ -28,5 +28,3 @@ WINDOW = 'window'
 DEPENDENCY = 'dependency'
 IN = 'in'
 OUT = 'out'
-
-print('are' in STOP_WORDS)

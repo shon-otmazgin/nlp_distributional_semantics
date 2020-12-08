@@ -131,7 +131,8 @@ class WordsStats:
 
 
 class WordSimilarities:
-    def __init__(self, word_freq, stats: WordsStats):
+    def __init__(self, word_freq, stats: WordsStats, smooth_ppmi=True):
+        self.smooth_ppmi = smooth_ppmi
         self.stats = stats
         self.l2_norm = defaultdict(lambda: defaultdict(lambda: 0.))
         self.word_vecs = defaultdict(lambda: defaultdict(lambda: defaultdict(lambda: 0))) # for efficient cosine similarity
@@ -164,7 +165,12 @@ class WordSimilarities:
         return self
 
     def get_PPMI(self, u, att, method):
-        ppmi = math.log(self.p(u=u, att=att, method=method) / (self.p(u=u, method=method) * self.p(att=att, method=method)))
+        if self.smooth_ppmi:
+            ppmi = math.log(
+                self.p(u=u, att=att, method=method) / ((self.p(u=u, method=method)**0.75) * self.p(att=att, method=method)))
+        else:
+            ppmi = math.log(
+                self.p(u=u, att=att, method=method) / (self.p(u=u, method=method) * self.p(att=att, method=method)))
         return ppmi if ppmi > 0 else 0
 
     def p(self, method, u=None, att=None):
@@ -207,16 +213,17 @@ if __name__ == '__main__':
         f.writelines([f"{w[0]} {w[1]}\n" for w in stats.word_frequency.most_common(n=50)])
 
     start_time = time.time()
-    word_sim = WordSimilarities(word_freq=1, stats=stats).fit()
+    word_sim = WordSimilarities(word_freq=1, stats=stats, smooth_ppmi=True).fit()
     print(f'Finished fit Similarities {(time.time() - start_time):.3f} sec')
 
     for word in target_words:
         start_time = time.time()
-        sent_similarities = word_sim.get_cosine_similarities(target=word, method=SENTENCE)
-        window_similarities = word_sim.get_cosine_similarities(target=word, method=WINDOW)
+        sent_sim = word_sim.get_cosine_similarities(target=word, method=SENTENCE)
+        win_sim = word_sim.get_cosine_similarities(target=word, method=WINDOW)
+        dep_sim = word_sim.get_cosine_similarities(target=word, method=DEPENDENCY)
         print(word)
-        for (sent_word, sent_sim), (win_word, win_sim) in zip(sent_similarities.most_common(20), window_similarities.most_common(20)):
-            print(f"{sent_word:<20} {sent_sim:.3f}\t{win_word:<20} {win_sim:.3f}")
+        for (sent_w, sent_s), (win_w, win_s), (dep_w, dep_s) in zip(sent_sim.most_common(20), win_sim.most_common(20),  dep_sim.most_common(20)):
+            print(f"{sent_w:<20} {sent_s:.3f}\t{win_w:<20} {win_s:.3f}\t{dep_w:<20} {dep_s:.3f}")
         print('*********')
 
     print(f'Finished time: {(time.time() - start_time_total):.3f} sec')
