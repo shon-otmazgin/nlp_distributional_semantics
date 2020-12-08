@@ -3,6 +3,7 @@ from collections import defaultdict, Counter
 from itertools import groupby
 import math
 from utils import *
+from tqdm import tqdm
 
 
 class WordsStats:
@@ -32,10 +33,12 @@ class WordsStats:
             sentences = [list(group) for k, group in groupby(f.readlines(), lambda x: x == '\n') if not k]
 
         print(f'Fitting {len(sentences)} sentences')
-        for sent in sentences:
-            tokenized_sent = [{h: v for h, v in zip(FIELDS_H, token.rstrip('\n').split('\t'))} for token in sent]
-            self.words_co_occurring(tokenized_sentence=tokenized_sent)
-            self.words_dependency(sentence_tokenized=tokenized_sent)
+        for sent in tqdm(sentences):
+            sentence_tokenized = [{h: v for h, v in zip(FIELDS_H, token.rstrip('\n').split('\t'))} for token in sent]
+            content_words, prep_words = WordsStats.get_content_and_prep_words(sentence_tokenized)
+
+            self.words_co_occurring(content_words=content_words)
+            self.words_dependency(sentence_tokenized=sentence_tokenized, content_words=content_words, prep_words=prep_words)
 
         self.filter_stats()
 
@@ -56,19 +59,22 @@ class WordsStats:
     def is_content_word(w):
         return w[POSTAG] in CONTENT_WORD_TAGS and w[LEMMA] not in STOP_WORDS
 
-    def set_attribute(self, w, att, method):
-        hashed_w = self._get_hash(s=w)
-        hashed_att = self._get_hash(s=att)
-        self.word_counts[method][hashed_w][hashed_att] += 1
-
-    def words_dependency(self, sentence_tokenized):
+    @staticmethod
+    def get_content_and_prep_words(sentence_tokenized):
         content_words, prep_words = [], []
         for w in sentence_tokenized:
             if WordsStats.is_content_word(w=w):
                 content_words.append(w)
             if w[POSTAG] in PREPOSITION:
                 prep_words.append(w)
+        return content_words, prep_words
 
+    def set_attribute(self, w, att, method):
+        hashed_w = self._get_hash(s=w)
+        hashed_att = self._get_hash(s=att)
+        self.word_counts[method][hashed_w][hashed_att] += 1
+
+    def words_dependency(self, sentence_tokenized, content_words, prep_words):
         def build_dependency_attribute(w):
             label, co_word = None, None
             parent_w = sentence_tokenized[int(w[HEAD]) - 1] if int(w[HEAD]) > 0 else None
@@ -110,20 +116,19 @@ class WordsStats:
                         c[hashed_att] = count
                 self.word_counts[method][hashed_w] = c
 
-    def words_co_occurring(self, tokenized_sentence):
-        content_words = [row[LEMMA] for row in tokenized_sentence if WordsStats.is_content_word(w=row)]
+    def words_co_occurring(self, content_words):
         for i, w in enumerate(content_words):
             low = i - self.window if i >= self.window else 0
             high = i + self.window + 1 if i + self.window + 1 <= len(content_words) else len(content_words)
             window = content_words[low:i] + content_words[i+1:high]
             for co_word in window:
-                self.set_attribute(w=w, att=(co_word,), method=WINDOW)
+                self.set_attribute(w=w[LEMMA], att=(co_word[LEMMA],), method=WINDOW)
 
             sentence = content_words[0:i] + content_words[i+1:]
             for co_word in sentence:
-                self.set_attribute(w=w, att=(co_word,), method=SENTENCE)
+                self.set_attribute(w=w[LEMMA], att=(co_word[LEMMA],), method=SENTENCE)
 
-            hashed_w = self._get_hash(s=w)
+            hashed_w = self._get_hash(s=w[LEMMA])
             self.word_frequency[hashed_w] += 1
 
 
@@ -200,8 +205,8 @@ if __name__ == '__main__':
     start_time_total = time.time()
 
     start_time = time.time()
-    file_ = 'wikipedia.tinysample.trees.lemmatized'
-    stats = WordsStats(window=2, attributes_word_freq=1, attributes_limit=100).fit(file=file_)
+    file_ = 'wikipedia.sample.trees.lemmatized'
+    stats = WordsStats(window=2, attributes_word_freq=75, attributes_limit=100).fit(file=file_)
     print(f'Finished fit stats {(time.time() - start_time):.3f} sec')
 
     file_ = 'counts_words.txt'
@@ -216,7 +221,7 @@ if __name__ == '__main__':
         f.writelines([f"{stats.int2str[dep]} {count}\n" for dep, count in dep_context.most_common(n=50)])
 
     start_time = time.time()
-    word_sim = WordSimilarities(word_freq=1, stats=stats, smooth_ppmi=True).fit()
+    word_sim = WordSimilarities(word_freq=100, stats=stats, smooth_ppmi=True).fit()
     print(f'Finished fit Similarities {(time.time() - start_time):.3f} sec')
 
     file_ = 'top20.txt'
@@ -230,9 +235,9 @@ if __name__ == '__main__':
 
             f.write(f'{word}\n')
             for (sent_w, sent_s), (win_w, win_s), (dep_w, dep_s) in zip(sent_sim, win_sim,  dep_sim):
-                print(f"{sent_w:<20} {sent_s:.3f}\t{win_w:<20} {win_s:.3f}\t{dep_w:<20} {dep_s:.3f}")
+                print(f"{win_w:<20} {win_s:.3f}\t{sent_w:<20} {sent_s:.3f}\t{dep_w:<20} {dep_s:.3f}")
 
-                f.write(f"{sent_w:<20} {win_w:<20} {dep_w:<20}\n")
+                f.write(f"{win_w:<20} {sent_w:<20} {dep_w:<20}\n")
 
             print(f'*********')
             f.write(f'*********\n')
