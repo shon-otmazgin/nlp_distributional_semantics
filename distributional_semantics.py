@@ -62,7 +62,7 @@ class WordsStats:
     def words_dependency(self, sentence_tokenized):
         content_words, prep_words = [], []
         for w in sentence_tokenized:
-            if w[LEMMA].lower() not in STOP_WORDS:
+            if w[POSTAG] in CONTENT_WORD_TAGS and w[LEMMA].lower() not in STOP_WORDS:
                 content_words.append(w)
             if w[POSTAG] in PREPOSITION:
                 prep_words.append(w)
@@ -109,7 +109,7 @@ class WordsStats:
                 self.word_counts[method][hashed_w] = c
 
     def words_co_occurring(self, tokenized_sentence):
-        content_words = [row[LEMMA] for row in tokenized_sentence if row[LEMMA].lower() not in STOP_WORDS]
+        content_words = [row[LEMMA] for row in tokenized_sentence if row[POSTAG] in CONTENT_WORD_TAGS and row[LEMMA].lower() not in STOP_WORDS]
         for i, w in enumerate(content_words):
             low = i - self.window if i >= self.window else 0
             high = i + self.window + 1 if i + self.window + 1 <= len(content_words) else len(content_words)
