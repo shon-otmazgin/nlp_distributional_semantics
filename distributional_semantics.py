@@ -76,9 +76,22 @@ class WordsStats:
                 self.set_attribute(w=w[LEMMA], att=att_in, method=DEPENDENCY)
                 self.set_attribute(w=parent_w[LEMMA], att=att_out, method=DEPENDENCY)
 
+        def build_with_prep_word(w):
+            parent_w = sentence_tokenized[int(w[HEAD]) - 1] if int(w[HEAD]) > 0 else None
+            if (parent_w is not None) and (parent_w in prep_words):
+                parent_parent_w = sentence_tokenized[int(parent_w[HEAD]) - 1] if int(parent_w[HEAD]) > 0 else None
+                if parent_parent_w is not None:
+                    label = f'{parent_w[DEPREL]}:{parent_w[LEMMA]}'
+
+                    att_w = (parent_parent_w[LEMMA], label, IN)
+                    self.set_attribute(w=w[LEMMA], att=att_w, method=DEPENDENCY)
+
+                    att_co_w = (w[LEMMA], label, OUT)
+                    self.set_attribute(w=parent_parent_w[LEMMA], att=att_co_w, method=DEPENDENCY)
+
         for w in content_words:
             build_content_word(w)
-
+            build_with_prep_word(w)
 
     def filter_stats(self):
         """
