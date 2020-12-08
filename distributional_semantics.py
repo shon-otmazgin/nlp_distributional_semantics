@@ -13,17 +13,15 @@ class WordsStats:
         self.total = {SENTENCE: 0, WINDOW: 0, DEPENDENCY: 0}
         self.total_w = {SENTENCE: defaultdict(lambda: 0), WINDOW: defaultdict(lambda: 0), DEPENDENCY: defaultdict(lambda: 0)}
         self.total_att = {SENTENCE: defaultdict(lambda: 0), WINDOW: defaultdict(lambda: 0), DEPENDENCY: defaultdict(lambda: 0)}
-        self.str2int = defaultdict(lambda: 0)
         self.int2str = {}
         self.attributes_word_freq = attributes_word_freq
         self.attributes_limit = attributes_limit
 
     def _get_hash(self, s):
-        hashed_s = self.str2int[s]
-        if hashed_s == 0:
-            hashed_s = hash(s)
-            self.str2int[s] = hashed_s
-            self.int2str[hashed_s] = s
+        hashed_s = hash(s)
+        if hashed_s in self.int2str:
+            return hashed_s
+        self.int2str[hashed_s] = s
         return hashed_s
 
     def _get_s(self, hashed_s):
