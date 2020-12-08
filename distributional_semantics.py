@@ -36,7 +36,7 @@ class WordsStats:
         for sent in sentences:
             tokenized_sent = [{h: v for h, v in zip(FIELDS_H, token.rstrip('\n').split('\t'))} for token in sent]
             self.words_co_occurring(tokenized_sentence=tokenized_sent)
-            # self.words_dependency(sentence_tokenized=tokenized_sent)
+            self.words_dependency(sentence_tokenized=tokenized_sent)
 
         self.filter_stats()
 
@@ -59,51 +59,26 @@ class WordsStats:
         hashed_att = self._get_hash(s=att)
         self.word_counts[method][hashed_w][hashed_att] += 1
 
-    # def words_dependency(self, sentence_tokenized):
-    #     content_words, prp_words, noun_words = [], [], []
-    #     for w in sentence_tokenized:
-    #         if w[POSTAG] in CONTENT_WORD_TAGS:
-    #             content_words.append(w)
-    #         elif w[POSTAG] in PREPOSITION:
-    #             prp_words.append(w)
-    #         if w[POSTAG] in NOUNS:
-    #             noun_words.append(w)
-    #
-    #     for w in content_words:
-    #         w_head = sentence_tokenized[int(w[HEAD])-1] if int(w[HEAD]) > 0 else None
-    #         if w_head is None:
-    #             continue
-    #
-    #         hashed_w = self._get_w_hash(w[LEMMA])
-    #         # case 1
-    #         for prp in prp_words:
-    #             if prp[HEAD] == w[ID]:
-    #                 for noun in noun_words:
-    #                     if noun[HEAD] == prp[ID]:
-    #                         label = w[DEPREL] + " " + prp[LEMMA]
-    #
-    #                         feature1 = (noun[LEMMA], label, self.OUT)
-    #                         feature2 = (w[LEMMA], label, self.IN)
-    #
-    #                         hashed_noun = self._get_w_hash(noun[LEMMA])
-    #                         self.word_counts[self.DEPENDENCY][hashed_w][feature1] += 1
-    #                         self.word_counts[self.DEPENDENCY][hashed_noun][feature2] += 1
-    #
-    #         if w_head[POSTAG] in PREPOSITION: # case 2
-    #             prp_head = sentence_tokenized[int(w_head[HEAD])-1]
-    #             label = w_head[DEPREL] + " " + w_head[LEMMA]
-    #
-    #             feature1 = (prp_head[LEMMA], label, self.IN)
-    #             feature2 = (w[LEMMA], label, self.OUT)
-    #
-    #             hashed_prp = self._get_w_hash(prp_head[LEMMA])
-    #             self.word_counts[self.DEPENDENCY][hashed_w][feature1] += 1
-    #             self.word_counts[self.DEPENDENCY][hashed_prp][feature2] += 1
-    #
-    #         else:
-    #             self.word_counts[self.DEPENDENCY][hashed_w][(w_head[LEMMA], w[DEPREL], self.IN)] += 1
-    #             hashed_w_head = self._get_w_hash(w_head[LEMMA])
-    #             self.word_counts[self.DEPENDENCY][hashed_w_head][(w[LEMMA], w[DEPREL], self.OUT)] += 1
+    def words_dependency(self, sentence_tokenized):
+        content_words, prep_words = [], []
+        for w in sentence_tokenized:
+            if w[POSTAG] in CONTENT_WORD_TAGS:
+                content_words.append(w)
+            elif w[POSTAG] in PREPOSITION:
+                prep_words.append(w)
+
+        def build_content_word(w):
+            parent_w = sentence_tokenized[int(w[HEAD]) - 1] if int(w[HEAD]) > 0 else None
+            if (parent_w is not None) and (parent_w in CONTENT_WORD_TAGS):
+                att_in = (parent_w[LEMMA], w[DEPREL], IN)
+                att_out = (w[LEMMA], w[DEPREL], OUT)
+
+                self.set_attribute(w=w[LEMMA], att=att_in, method=DEPENDENCY)
+                self.set_attribute(w=parent_w[LEMMA], att=att_out, method=DEPENDENCY)
+
+        for w in content_words:
+            build_content_word(w)
+
 
     def filter_stats(self):
         """

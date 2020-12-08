@@ -11,7 +11,7 @@ PDEPREL = 'PDEPREL'
 FIELDS_H = [ID, FORM, LEMMA, CPOSTAG, POSTAG, FEATS, HEAD, DEPREL, PHEAD, PDEPREL]
 
 # https://webapps.towson.edu/ows/ptsspch.htm#:~:text=Content%20words%20are%20words%20that,language%20as%20they%20become%20obsolete.
-PREPOSITION = ['IN'] # TODO: NEED to confirm that these are all the prepositions
+PREPOSITION = ['IN', 'TO']
 NOUNS = ['NN', 'NNS', 'NNP', 'NNPS']
 VERBS = ['VB', 'VBD', 'VBG', 'VBN', 'VBP', 'VBZ']
 ADJECTIVES = ['JJ', 'JJR', 'JJS']
