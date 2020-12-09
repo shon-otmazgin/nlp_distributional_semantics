@@ -18,6 +18,7 @@ class WordsStats:
         self.int2str = {}
         self.attributes_word_freq = attributes_word_freq
         self.attributes_limit = attributes_limit
+        self.dep_top_att = Counter()
 
     def _get_hash(self, s):
         hashed_s = hash(s)
@@ -84,6 +85,8 @@ class WordsStats:
         hashed_w = self._get_hash(s=w)
         hashed_att = self._get_hash(s=att)
         self.word_counts[method][hashed_w][hashed_att] += 1
+        if method == DEPENDENCY:
+            self.dep_top_att[hashed_att] += 1
 
     def words_dependency(self, sentence_tokenized, content_words, prep_words):
         def build_dependency_attribute(w):
@@ -221,29 +224,18 @@ if __name__ == '__main__':
     stats = WordsStats(window=2, attributes_word_freq=75, attributes_limit=100).fit(file=file)
     print(f'Finished fit stats {(time.time() - start_time):.3f} sec')
 
-    # file_ = 'counts_words.txt'
-    # with open(file_, 'w') as f:
-    #     f.writelines([f"{stats.int2str[w]} {count}\n" for w, count in stats.word_frequency.most_common(n=50)])
-    #
-    # file_ = 'counts_contexts_dep.txt'
-    # with open(file_, 'w') as f:
-    #     dep_context = Counter()
-    #     for w, c in stats.word_counts[DEPENDENCY].items():
-    #         dep_context += c
-    #     f.writelines([f"{stats.int2str[dep]} {count}\n" for dep, count in dep_context.most_common(n=50)])
-
     start_time = time.time()
     word_sim = WordSimilarities(word_freq=100, stats=stats, smooth_ppmi=True).fit()
     print(f'Finished fit Similarities {(time.time() - start_time):.3f} sec')
 
-    file_ = 'top20.txt'
-    with open(file_, 'w') as f:
+    file = 'top20.txt'
+    with open(file, 'w') as f:
         for word in target_words:
             sent_sim = word_sim.get_cosine_similarities(target=word, method=SENTENCE).most_common(20)
             win_sim = word_sim.get_cosine_similarities(target=word, method=WINDOW).most_common(20)
             dep_sim = word_sim.get_cosine_similarities(target=word, method=DEPENDENCY).most_common(20)
             print(word)
-            print(len(sent_sim), len(win_sim), len(dep_sim))
+            # assert len(sent_sim) == len(win_sim) == len(dep_sim)
 
             f.write(f'{word}\n')
             for (sent_w, sent_s), (win_w, win_s), (dep_w, dep_s) in zip(sent_sim, win_sim,  dep_sim):
@@ -253,6 +245,17 @@ if __name__ == '__main__':
 
             print(f'*********')
             f.write(f'*********\n')
+    print(f'file {file} written')
+
+    file = 'counts_words.txt'
+    with open(file, 'w') as f:
+        f.writelines([f"{stats.int2str[w]} {count}\n" for w, count in stats.word_frequency.most_common(n=50)])
+    print(f'file {file} written')
+
+    file = 'counts_contexts_dep.txt'
+    with open(file, 'w') as f:
+        f.writelines([f"{stats.int2str[att]} {count}\n" for att, count in stats.dep_top_att.most_common(n=50)])
+    print(f'file {file} written')
 
     print(f'Finished time: {(time.time() - start_time_total):.3f} sec')
     print('Smoothed!')
