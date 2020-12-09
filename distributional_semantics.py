@@ -12,7 +12,9 @@ class WordsStats:
         self.word_frequency = Counter()
         self.word_counts = defaultdict(lambda: defaultdict(Counter))   # word_counts[method][word][attribute] = #freq
         self.total = {SENTENCE: 0, WINDOW: 0, DEPENDENCY: 0}
+        self.total_smooth = {SENTENCE: 0, WINDOW: 0, DEPENDENCY: 0}
         self.total_w = {SENTENCE: defaultdict(lambda: 0), WINDOW: defaultdict(lambda: 0), DEPENDENCY: defaultdict(lambda: 0)}
+        self.total_w_smooth = {SENTENCE: defaultdict(lambda: 0), WINDOW: defaultdict(lambda: 0), DEPENDENCY: defaultdict(lambda: 0)}
         self.total_att = {SENTENCE: defaultdict(lambda: 0), WINDOW: defaultdict(lambda: 0), DEPENDENCY: defaultdict(lambda: 0)}
         self.int2str = {}
         self.attributes_word_freq = attributes_word_freq
@@ -30,9 +32,9 @@ class WordsStats:
 
     def fit(self, file):
         with open(file, 'r', encoding='utf8') as f:
-            sentences = [list(group) for k, group in groupby(f.readlines(), lambda x: x == '\n') if not k]
+            sentences = (list(group) for k, group in groupby(f.readlines(), lambda x: x == '\n') if not k)
 
-        print(f'Fitting {len(sentences)} sentences')
+        # print(f'Fitting {len(sentences)} sentences')
         for sent in tqdm(sentences):
             sentence_tokenized = [{h: v for h, v in zip(FIELDS_H, token.rstrip('\n').split('\t'))} for token in sent]
             content_words, prep_words = WordsStats.get_content_and_prep_words(sentence_tokenized)
@@ -44,11 +46,13 @@ class WordsStats:
 
         for method in self.word_counts:
             for hashed_w, w_c in self.word_counts[method].items():
+                # cache p(u,*)
+                self.total_w[method][hashed_w] = sum(w_c.values())
+                self.total_w_smooth[method][hashed_w] = sum([v ** 0.75 for v in w_c.values()])
 
                 # cache p(*,*)
-                self.total[method] += sum(w_c.values())
-                # cache p(u,*)
-                self.total_w[method][hashed_w] += sum(w_c.values())
+                self.total[method] += self.total_w[method][hashed_w]
+                self.total_smooth[method] += self.total_w_smooth[method][hashed_w]
 
                 # cache p(*,att)
                 for hashed_att, att_c in w_c.items():
@@ -57,6 +61,11 @@ class WordsStats:
 
     @staticmethod
     def is_content_word(w):
+        # if w[POSTAG] == 'RB':
+        #     if w[LEMMA] not in STOP_WORDS:
+        #         print(f'not in stop words: {w[LEMMA]}')
+        #     else:
+        #         print(f'in stop words: {w[LEMMA]}')
         return w[POSTAG] in CONTENT_WORD_TAGS and w[LEMMA] not in STOP_WORDS
 
     @staticmethod
@@ -167,13 +176,10 @@ class WordSimilarities:
         return self
 
     def get_PPMI(self, u, att, method):
-        if self.smooth_ppmi:
-            ppmi = math.log(
-                self.p(u=u, att=att, method=method) / ((self.p(u=u, method=method)**0.75) * self.p(att=att, method=method)))
-        else:
-            ppmi = math.log(
-                self.p(u=u, att=att, method=method) / (self.p(u=u, method=method) * self.p(att=att, method=method)))
-        return ppmi if ppmi > 0 else 0
+        ppmi = math.log(
+            self.p(u=u, att=att, method=method) / (self.p(u=u, method=method) * self.p(att=att, method=method)))
+
+        return max(ppmi, 0)
 
     def p(self, method, u=None, att=None):
         if u is None and att is None:
@@ -181,7 +187,10 @@ class WordSimilarities:
         if u is None:
             return self.stats.total_att[method][att] / self.stats.total[method]
         if att is None:
-            return self.stats.total_w[method][u] / self.stats.total[method]
+            if self.smooth_ppmi:
+                return self.stats.total_w_smooth[method][u] / self.stats.total_smooth[method]
+            else:
+                return self.stats.total_w[method][u] / self.stats.total[method]
         return self.stats.word_counts[method][u][att] / self.stats.total[method]
 
     def get_cosine_similarities(self, target, method):
@@ -206,6 +215,7 @@ if __name__ == '__main__':
 
     start_time = time.time()
     file_ = 'wikipedia.sample.trees.lemmatized'
+
     stats = WordsStats(window=2, attributes_word_freq=75, attributes_limit=100).fit(file=file_)
     print(f'Finished fit stats {(time.time() - start_time):.3f} sec')
 
@@ -221,7 +231,7 @@ if __name__ == '__main__':
     #     f.writelines([f"{stats.int2str[dep]} {count}\n" for dep, count in dep_context.most_common(n=50)])
 
     start_time = time.time()
-    word_sim = WordSimilarities(word_freq=100, stats=stats, smooth_ppmi=True).fit()
+    word_sim = WordSimilarities(word_freq=100, stats=stats, smooth_ppmi=False).fit()
     print(f'Finished fit Similarities {(time.time() - start_time):.3f} sec')
 
     file_ = 'top20.txt'
@@ -243,3 +253,4 @@ if __name__ == '__main__':
             f.write(f'*********\n')
 
     print(f'Finished time: {(time.time() - start_time_total):.3f} sec')
+    print('Not Smoothed!')
