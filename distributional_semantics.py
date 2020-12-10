@@ -49,6 +49,7 @@ class WordsStats:
                     else:
                         yield sentence
                         sentence = []
+                yield sentence
 
         for sent in tqdm(read_sentences(), total=774858):
             content_words, prep_words = WordsStats.get_content_and_prep_words(sent)
@@ -74,7 +75,7 @@ class WordsStats:
 
     @staticmethod
     def is_content_word(w):
-        return w[POSTAG] in CONTENT_WORD_TAGS and w[LEMMA] not in STOP_WORDS and w not in list(string.punctuation)
+        return w[POSTAG] in CONTENT_WORD_TAGS and w[LEMMA] not in STOP_WORDS and w[LEMMA] not in list(string.punctuation)
 
     @staticmethod
     def get_content_and_prep_words(sentence_tokenized):
@@ -82,7 +83,7 @@ class WordsStats:
         for w in sentence_tokenized:
             if WordsStats.is_content_word(w=w):
                 content_words.append(w)
-            if w[POSTAG] in PREPOSITION:
+            elif w[POSTAG] in PREPOSITION:
                 prep_words.append(w)
         return content_words, prep_words
 
