@@ -99,7 +99,7 @@ class WordsStats:
 
             elif parent_w in prep_words:
                 parent_parent_w = sentence_tokenized[int(parent_w[HEAD]) - 1] if int(parent_w[HEAD]) > 0 else None
-                if parent_parent_w:
+                if parent_parent_w and WordsStats.is_content_word(w=parent_parent_w):
                     label = f'{parent_w[DEPREL]}:{parent_w[LEMMA]}'
                     co_word = parent_parent_w[LEMMA]
 
