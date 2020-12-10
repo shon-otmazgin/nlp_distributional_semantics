@@ -2,6 +2,7 @@ import time
 from collections import defaultdict, Counter
 import math
 from utils import *
+import string
 from tqdm import tqdm
 
 
@@ -69,7 +70,7 @@ class WordsStats:
 
     @staticmethod
     def is_content_word(w):
-        return w[POSTAG] in CONTENT_WORD_TAGS and w[LEMMA] not in STOP_WORDS
+        return w[POSTAG] in CONTENT_WORD_TAGS and w[LEMMA] not in STOP_WORDS and w not in list(string.punctuation)
 
     @staticmethod
     def get_content_and_prep_words(sentence_tokenized):
