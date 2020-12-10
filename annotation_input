@@ -1,0 +1,43 @@
+car
+truck                driver               vehicle
+driver               drive                truck
+vehicle              truck                driver
+motor                vehicle              motorcycle
+drive                race                 automobile
+racing               motor                locomotive
+ford                 ford                 aircraft
+formula              racing               racing
+traffic              automobile           auto
+automobile           formula              station
+bus                  auto                 horse
+motorcycle           crash                motor
+race                 toyota               stock
+bicycle              nascar               traffic
+aircraft             wheel                bicycle
+auto                 engine               item
+toyota               motorcycle           boat
+lap                  ferrari              bus
+stock                bmw                  cyclist
+toy                  chassis              cruiser
+
+piano
+violin               violin               violin
+flute                flute                viola
+cello                sonata               guitar
+concerto             cello                cello
+viola                concerto             bass
+sonata               percussion           flute
+op                   bass                 keyboard
+guitar               trumpet              percussion
+string               instrument           drum
+trumpet              op                   horn
+bass                 viola                saxophone
+saxophone            saxophone            trumpet
+solo                 composition          instrument
+keyboard             quartet              vocal
+instrument           tenor                orchestra
+quartet              horn                 organ
+soloist              guitar               choir
+percussion           trio                 dance
+composition          string               solo
+ensemble             keyboard             music
