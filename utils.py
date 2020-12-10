@@ -1,5 +1,3 @@
-import string
-
 ID = 'ID'
 FORM = 'FORM'
 LEMMA = 'LEMMA'

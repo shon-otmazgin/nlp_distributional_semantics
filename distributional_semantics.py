@@ -1,6 +1,7 @@
 import time
 from collections import defaultdict, Counter
 import math
+import string
 from utils import *
 from tqdm import tqdm
 
@@ -73,7 +74,7 @@ class WordsStats:
 
     @staticmethod
     def is_content_word(w):
-        return w[POSTAG] in CONTENT_WORD_TAGS and w[LEMMA] not in STOP_WORDS
+        return w[POSTAG] in CONTENT_WORD_TAGS and w[LEMMA] not in STOP_WORDS and w not in list(string.punctuation)
 
     @staticmethod
     def get_content_and_prep_words(sentence_tokenized):
@@ -103,7 +104,7 @@ class WordsStats:
 
             elif parent_w in prep_words:
                 parent_parent_w = sentence_tokenized[int(parent_w[HEAD]) - 1] if int(parent_w[HEAD]) > 0 else None
-                if parent_parent_w:
+                if parent_parent_w and WordsStats.is_content_word(w=parent_parent_w):
                     label = f'{parent_w[DEPREL]}:{parent_w[LEMMA]}'
                     co_word = parent_parent_w[LEMMA]
 
