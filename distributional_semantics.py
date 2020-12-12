@@ -183,9 +183,10 @@ class WordSimilarities:
             for w in self.stats.word_counts[method]:
                 for att in self.stats.word_counts[method][w]:
                     ppmi = self.get_PPMI(u=w, att=att, method=method)
-                    self.l2_norm[method][w] += ppmi ** 2
-                    self.word_vecs[method][w][att] = ppmi
-                    self.att_vecs[method][att][w] = ppmi
+                    if ppmi:
+                        self.l2_norm[method][w] += ppmi ** 2
+                        self.word_vecs[method][w][att] = ppmi
+                        self.att_vecs[method][att][w] = ppmi
 
                 self.l2_norm[method][w] = math.sqrt(self.l2_norm[method][w])
         return self
