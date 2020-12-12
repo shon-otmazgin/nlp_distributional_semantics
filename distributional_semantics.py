@@ -128,29 +128,12 @@ class WordsStats:
         for w in content_words:
             build_dependency_attribute(w)
 
-    def filter_stats(self):
-        """
-        Filtering Features:
-        attribute is a tuple of (word, att1(optional), att1(optional), ...)
-        100 most_common features for a word
-        frequent of the attribute's word (location 0 in the tuple) should be grater than 75
-        """
+    def filter_attributes(self):
         for method in self.word_counts:
-            words_to_del = set()
             for hashed_w in self.word_counts[method]:
-                if self.word_frequency[hashed_w] >= self.word_freq:
-                    c = Counter()
-                    for hashed_att, count in self.word_counts[method][hashed_w].items():
-                        att = self._get_s(hashed_att)
-                        hashed_w_att = self._get_hash(att[0])
-                        if self.word_frequency[hashed_w_att] >= self.attributes_word_freq:
-                            c[hashed_att] = count
-                    self.word_counts[method][hashed_w] = Counter({att: count for att, count in c.most_common(n=self.attributes_limit)})
-                else:
-                    words_to_del.add(hashed_w)
-
-            for hashed_w in words_to_del:
-                del self.word_counts[method][hashed_w]
+                c = self.word_counts[method][hashed_w]
+                self.word_counts[method][hashed_w] = Counter({att: count for att, count
+                                                              in c.most_common(n=self.attributes_limit)})
 
     def words_co_occurring(self, content_words):
         for i, w in enumerate(content_words):
