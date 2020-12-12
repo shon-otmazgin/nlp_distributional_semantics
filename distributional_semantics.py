@@ -60,10 +60,9 @@ class WordsStats:
             if c >= self.attributes_word_freq:
                 self.word_frequency[w] = c
 
-
-        # for sent in tqdm(read_sentences(), total=774858):
-        #     content_words, prep_words = WordsStats.get_content_and_prep_words(sent)
-        #     self.words_co_occurring(content_words=content_words)
+        for sent in tqdm(read_sentences(), total=774858):
+            content_words, prep_words = WordsStats.get_content_and_prep_words(sent)
+            self.words_co_occurring(content_words=content_words)
         #     self.words_dependency(sentence_tokenized=sent, content_words=content_words, prep_words=prep_words)
         #
         # self.filter_stats()
@@ -155,18 +154,18 @@ class WordsStats:
 
     def words_co_occurring(self, content_words):
         for i, w in enumerate(content_words):
-            low = i - self.window if i >= self.window else 0
-            high = i + self.window+1 if i + self.window+1 <= len(content_words) else len(content_words)
-            window = content_words[low:i] + content_words[i+1:high]
-            for co_word in window:
-                self.set_attribute(w=w[LEMMA], att=(co_word[LEMMA],), method=WINDOW)
+            if self.word_frequency[w[LEMMA]] >= self.word_freq:
+                low = i - self.window if i >= self.window else 0
+                high = i + self.window+1 if i + self.window+1 <= len(content_words) else len(content_words)
+                window = content_words[low:i] + content_words[i+1:high]
+                for co_word in window:
+                    if self.word_frequency[co_word[LEMMA]] >= self.attributes_word_freq:
+                        self.set_attribute(w=w[LEMMA], att=co_word[LEMMA], method=WINDOW)
 
-            sentence = content_words[0:i] + content_words[i+1:]
-            for co_word in sentence:
-                self.set_attribute(w=w[LEMMA], att=(co_word[LEMMA],), method=SENTENCE)
-
-            hashed_w = self._get_hash(s=w[LEMMA])
-            self.word_frequency[hashed_w] += 1
+                sentence = content_words[0:i] + content_words[i+1:]
+                for co_word in sentence:
+                    if self.word_frequency[co_word[LEMMA]] >= self.attributes_word_freq:
+                        self.set_attribute(w=w[LEMMA], att=co_word[LEMMA], method=SENTENCE)
 
 
 class WordSimilarities:
