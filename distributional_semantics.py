@@ -55,6 +55,7 @@ class WordsStats:
         for sent in tqdm(read_sentences(), total=774858):
             for token in sent:
                 word_frequency[token[LEMMA]] += 1
+        print(word_frequency['minivan'])
 
         for w, c in word_frequency.items():
             if c >= self.attributes_word_freq:
@@ -64,22 +65,22 @@ class WordsStats:
             content_words, prep_words = WordsStats.get_content_and_prep_words(sent)
             self.words_co_occurring(content_words=content_words)
         #     self.words_dependency(sentence_tokenized=sent, content_words=content_words, prep_words=prep_words)
-        #
-        # self.filter_stats()
-        #
-        # for method in self.word_counts:
-        #     for hashed_w, w_c in self.word_counts[method].items():
-        #         # cache p(u,*)
-        #         self.total_w[method][hashed_w] = sum(w_c.values())
-        #         self.total_w_smooth[method][hashed_w] = sum([v ** 0.75 for v in w_c.values()])
-        #
-        #         # cache p(*,*)
-        #         self.total[method] += self.total_w[method][hashed_w]
-        #         self.total_smooth[method] += self.total_w_smooth[method][hashed_w]
-        #
-        #         # cache p(*,att)
-        #         for hashed_att, att_c in w_c.items():
-        #             self.total_att[method][hashed_att] += att_c
+
+        self.filter_attributes()
+
+        for method in self.word_counts:
+            for hashed_w, w_c in self.word_counts[method].items():
+                # cache p(u,*)
+                self.total_w[method][hashed_w] = sum(w_c.values())
+                self.total_w_smooth[method][hashed_w] = sum([v ** 0.75 for v in w_c.values()])
+
+                # cache p(*,*)
+                self.total[method] += self.total_w[method][hashed_w]
+                self.total_smooth[method] += self.total_w_smooth[method][hashed_w]
+
+                # cache p(*,att)
+                for hashed_att, att_c in w_c.items():
+                    self.total_att[method][hashed_att] += att_c
         return self
 
     @staticmethod
@@ -226,12 +227,12 @@ if __name__ == '__main__':
     file = 'wikipedia.sample.trees.lemmatized'
 
     stats = WordsStats(window=2, word_freq=100, attributes_word_freq=75, attributes_limit=100).fit(file=file)
-    # print(f'Finished fit stats {(time.time() - start_time):.3f} sec')
-    #
-    # start_time = time.time()
-    # word_sim = WordSimilarities(stats=stats, smooth_ppmi=True).fit()
-    # print(f'Finished fit Similarities {(time.time() - start_time):.3f} sec')
-    #
+    print(f'Finished fit stats {(time.time() - start_time):.3f} sec')
+
+    start_time = time.time()
+    word_sim = WordSimilarities(stats=stats, smooth_ppmi=True).fit()
+    print(f'Finished fit Similarities {(time.time() - start_time):.3f} sec')
+
     # file = 'top20.txt'
     # with open(file, 'w', encoding='utf8') as f:
     #     for word in target_words:
