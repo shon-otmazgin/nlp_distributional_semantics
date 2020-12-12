@@ -124,8 +124,9 @@ class WordsStats:
                 att_w = (co_word, label, IN)
                 self.set_attribute(w=w[LEMMA], att=att_w, method=DEPENDENCY)
 
-                att_co_w = (w[LEMMA], label, OUT)
-                self.set_attribute(w=co_word, att=att_co_w, method=DEPENDENCY)
+                if self.word_frequency[co_word] >= self.word_freq:
+                    att_co_w = (w[LEMMA], label, OUT)
+                    self.set_attribute(w=co_word, att=att_co_w, method=DEPENDENCY)
 
         for w in content_words:
             if self.word_frequency[w[LEMMA]] >= self.word_freq:
