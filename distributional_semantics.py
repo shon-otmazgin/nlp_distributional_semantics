@@ -64,7 +64,7 @@ class WordsStats:
         for sent in tqdm(read_sentences(), total=774858):
             content_words, prep_words = WordsStats.get_content_and_prep_words(sent)
             self.words_co_occurring(content_words=content_words)
-        #     self.words_dependency(sentence_tokenized=sent, content_words=content_words, prep_words=prep_words)
+            self.words_dependency(sentence_tokenized=sent, content_words=content_words, prep_words=prep_words)
 
         self.filter_attributes()
 
@@ -110,14 +110,16 @@ class WordsStats:
             parent_w = sentence_tokenized[int(w[HEAD]) - 1] if int(w[HEAD]) > 0 else None
 
             if parent_w and WordsStats.is_content_word(w=parent_w):
-                label = w[DEPREL]
-                co_word = parent_w[LEMMA]
+                if self.word_frequency[parent_w[LEMMA]] >= self.attributes_word_freq:
+                    label = w[DEPREL]
+                    co_word = parent_w[LEMMA]
 
             elif parent_w in prep_words:
                 parent_parent_w = sentence_tokenized[int(parent_w[HEAD]) - 1] if int(parent_w[HEAD]) > 0 else None
                 if parent_parent_w and WordsStats.is_content_word(w=parent_parent_w):
-                    label = f'{parent_w[DEPREL]}:{parent_w[LEMMA]}'
-                    co_word = parent_parent_w[LEMMA]
+                    if self.word_frequency[parent_parent_w[LEMMA]] >= self.attributes_word_freq:
+                        label = f'{parent_w[DEPREL]}:{parent_w[LEMMA]}'
+                        co_word = parent_parent_w[LEMMA]
 
             if label and co_word:
                 att_w = (co_word, label, IN)
@@ -127,7 +129,8 @@ class WordsStats:
                 self.set_attribute(w=co_word, att=att_co_w, method=DEPENDENCY)
 
         for w in content_words:
-            build_dependency_attribute(w)
+            if self.word_frequency[w[LEMMA]] >= self.word_freq:
+                build_dependency_attribute(w)
 
     def filter_attributes(self):
         for method in self.word_counts:
