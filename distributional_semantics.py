@@ -231,9 +231,9 @@ if __name__ == '__main__':
     start_time_total = time.time()
 
     start_time = time.time()
-    file = 'wikipedia.tinysample.trees.lemmatized'
+    file = 'wikipedia.sample.trees.lemmatized'
 
-    stats = WordsStats(window=2, word_freq=1, attributes_word_freq=1, attributes_limit=100).fit(file=file)
+    stats = WordsStats(window=2, word_freq=100, attributes_word_freq=75, attributes_limit=100).fit(file=file)
     print(f'Finished fit stats {(time.time() - start_time):.3f} sec')
 
     start_time = time.time()
