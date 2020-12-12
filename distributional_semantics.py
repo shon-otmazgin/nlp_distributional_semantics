@@ -55,7 +55,6 @@ class WordsStats:
         for sent in tqdm(read_sentences(), total=774858):
             for token in sent:
                 word_frequency[token[LEMMA]] += 1
-        print(word_frequency['minivan'])
 
         for w, c in word_frequency.items():
             if c >= self.attributes_word_freq:
@@ -236,78 +235,78 @@ if __name__ == '__main__':
     word_sim = WordSimilarities(stats=stats, smooth_ppmi=True).fit()
     print(f'Finished fit Similarities {(time.time() - start_time):.3f} sec')
 
-    # file = 'top20.txt'
-    # with open(file, 'w', encoding='utf8') as f:
-    #     for word in target_words:
-    #         sent_sim = word_sim.get_cosine_similarities(target=word, method=SENTENCE).most_common(20)
-    #         win_sim = word_sim.get_cosine_similarities(target=word, method=WINDOW).most_common(20)
-    #         dep_sim = word_sim.get_cosine_similarities(target=word, method=DEPENDENCY).most_common(20)
-    #         print(f'{word}\n')
-    #         f.write(f'{word}\n\n')
-    #
-    #         for (sent_w, sent_s), (win_w, win_s), (dep_w, dep_s) in zip(sent_sim, win_sim, dep_sim):
-    #             print(f"{win_w:<20} {win_s:.3f}\t{sent_w:<20} {sent_s:.3f}\t{dep_w:<20} {dep_s:.3f}")
-    #
-    #             f.write(f"{win_w:<20} {sent_w:<20} {dep_w:<20}\n")
-    #
-    #         print(f'*********')
-    #         f.write(f'*********\n')
-    # print(f'file {file} written')
-    #
-    # file = 'counts_words.txt'
-    # with open(file, 'w', encoding='utf8') as f:
-    #     f.writelines([f"{stats.int2str[w]} {count}\n" for w, count in stats.word_frequency.most_common(n=50)])
-    # print(f'file {file} written')
-    #
-    # file = 'counts_contexts_dep.txt'
-    # with open(file, 'w', encoding='utf8') as f:
-    #     f.writelines([f"{stats.int2str[att]} {count}\n" for att, count in stats.dep_top_att.most_common(n=50)])
-    # print(f'file {file} written')
-    #
-    # file = 'top20_latex.txt'
-    # with open(file, 'w', encoding='utf8') as f:
-    #     for word in target_words:
-    #         sent_sim = word_sim.get_cosine_similarities(target=word, method=SENTENCE).most_common(20)
-    #         win_sim = word_sim.get_cosine_similarities(target=word, method=WINDOW).most_common(20)
-    #         dep_sim = word_sim.get_cosine_similarities(target=word, method=DEPENDENCY).most_common(20)
-    #
-    #         f.write(f'\\captionof{{table}}{{Words similarity to {word}}}\n')
-    #         f.write('\\begin{tabular}{ c|c|c }\n')
-    #         f.write(f'\\hline\n')
-    #         f.write(f'2-word window & Sentence window & Dependency edge \\\\\n')
-    #         f.write(f'\\hline\n')
-    #
-    #         for (sent_w, sent_s), (win_w, win_s), (dep_w, dep_s) in zip(sent_sim, win_sim, dep_sim):
-    #             f.write(f"{win_w:<20}&{sent_w:<20}&{dep_w}\\\\\n")
-    #         f.write(f'\\hline\n')
-    #         f.write('\\end{tabular}\n')
-    #
-    #     file = 'top20_att_latex.txt'
-    #     with open(file, 'w', encoding='utf8') as f:
-    #         for word in target_words:
-    #             hashed_w = hash(word)
-    #             sent_w_atts = word_sim.word_vecs[SENTENCE][hashed_w].most_common(20)
-    #             win_w_atts = word_sim.word_vecs[WINDOW][hashed_w].most_common(20)
-    #             dep_w_atts = word_sim.word_vecs[DEPENDENCY][hashed_w].most_common(20)
-    #
-    #             f.write(f"\\captionof{{table}}{{Highest attribute's PPMI of {word}}}\n")
-    #             f.write('\\begin{tabular}{ c|c|c }\n')
-    #             f.write(f'\\hline\n')
-    #             f.write(f'2-word window & Sentence window & Dependency edge \\\\\n')
-    #             f.write(f'\\hline\n')
-    #
-    #             for (sent_att, _), (win_att, _), (dep_att, _) in zip(sent_w_atts, win_w_atts, dep_w_atts):
-    #                 sent_att = stats.int2str[sent_att]
-    #                 win_att = stats.int2str[win_att]
-    #                 dep_att = stats.int2str[dep_att]
-    #
-    #                 f.write(f"{', '.join(sent_att):<20}&{', '.join(win_att):<20}&{', '.join(dep_att)}\\\\\n")
-    #             f.write(f'\\hline\n')
-    #             f.write('\\end{tabular}\n')
-    #
-    # for method in word_sim.word_vecs:
-    #     print(f'{method:<15} '
-    #           f'words for similarity: {len(word_sim.word_vecs[method]):<20} '
-    #           f'atts for similarity: {len(word_sim.att_vecs[method]):<20}')
-    #
-    # print(f'Finished time: {(time.time() - start_time_total):.3f} sec')
+    file = 'top20.txt'
+    with open(file, 'w', encoding='utf8') as f:
+        for word in target_words:
+            sent_sim = word_sim.get_cosine_similarities(target=word, method=SENTENCE).most_common(20)
+            win_sim = word_sim.get_cosine_similarities(target=word, method=WINDOW).most_common(20)
+            dep_sim = word_sim.get_cosine_similarities(target=word, method=DEPENDENCY).most_common(20)
+            print(f'{word}\n')
+            f.write(f'{word}\n\n')
+
+            for (sent_w, sent_s), (win_w, win_s), (dep_w, dep_s) in zip(sent_sim, win_sim, dep_sim):
+                print(f"{win_w:<20} {win_s:.3f}\t{sent_w:<20} {sent_s:.3f}\t{dep_w:<20} {dep_s:.3f}")
+
+                f.write(f"{win_w:<20} {sent_w:<20} {dep_w:<20}\n")
+
+            print(f'*********')
+            f.write(f'*********\n')
+    print(f'file {file} written')
+
+    file = 'counts_words.txt'
+    with open(file, 'w', encoding='utf8') as f:
+        f.writelines([f"{w} {count}\n" for w, count in stats.word_frequency.most_common(n=50)])
+    print(f'file {file} written')
+
+    file = 'counts_contexts_dep.txt'
+    with open(file, 'w', encoding='utf8') as f:
+        f.writelines([f"{stats.int2str[att]} {count}\n" for att, count in stats.dep_top_att.most_common(n=50)])
+    print(f'file {file} written')
+
+    file = 'top20_latex.txt'
+    with open(file, 'w', encoding='utf8') as f:
+        for word in target_words:
+            sent_sim = word_sim.get_cosine_similarities(target=word, method=SENTENCE).most_common(20)
+            win_sim = word_sim.get_cosine_similarities(target=word, method=WINDOW).most_common(20)
+            dep_sim = word_sim.get_cosine_similarities(target=word, method=DEPENDENCY).most_common(20)
+
+            f.write(f'\\captionof{{table}}{{Words similarity to {word}}}\n')
+            f.write('\\begin{tabular}{ c|c|c }\n')
+            f.write(f'\\hline\n')
+            f.write(f'2-word window & Sentence window & Dependency edge \\\\\n')
+            f.write(f'\\hline\n')
+
+            for (sent_w, sent_s), (win_w, win_s), (dep_w, dep_s) in zip(sent_sim, win_sim, dep_sim):
+                f.write(f"{win_w:<20}&{sent_w:<20}&{dep_w}\\\\\n")
+            f.write(f'\\hline\n')
+            f.write('\\end{tabular}\n')
+
+        file = 'top20_att_latex.txt'
+        with open(file, 'w', encoding='utf8') as f:
+            for word in target_words:
+                hashed_w = hash(word)
+                sent_w_atts = word_sim.word_vecs[SENTENCE][hashed_w].most_common(20)
+                win_w_atts = word_sim.word_vecs[WINDOW][hashed_w].most_common(20)
+                dep_w_atts = word_sim.word_vecs[DEPENDENCY][hashed_w].most_common(20)
+
+                f.write(f"\\captionof{{table}}{{Highest attribute's PPMI of {word}}}\n")
+                f.write('\\begin{tabular}{ c|c|c }\n')
+                f.write(f'\\hline\n')
+                f.write(f'2-word window & Sentence window & Dependency edge \\\\\n')
+                f.write(f'\\hline\n')
+
+                for (sent_att, _), (win_att, _), (dep_att, _) in zip(sent_w_atts, win_w_atts, dep_w_atts):
+                    sent_att = stats.int2str[sent_att]
+                    win_att = stats.int2str[win_att]
+                    dep_att = stats.int2str[dep_att]
+
+                    f.write(f"{', '.join(sent_att):<20}&{', '.join(win_att):<20}&{', '.join(dep_att)}\\\\\n")
+                f.write(f'\\hline\n')
+                f.write('\\end{tabular}\n')
+
+    for method in word_sim.word_vecs:
+        print(f'{method:<15} '
+              f'words for similarity: {len(word_sim.word_vecs[method]):<20} '
+              f'atts for similarity: {len(word_sim.att_vecs[method]):<20}')
+
+    print(f'Finished time: {(time.time() - start_time_total):.3f} sec')
