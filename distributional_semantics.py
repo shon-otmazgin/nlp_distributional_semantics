@@ -54,7 +54,7 @@ class WordsStats:
         word_frequency = Counter()
         for sent in tqdm(read_sentences(), total=774858):
             for token in sent:
-                if WordsStats.is_content_word(w[LEMMA]):
+                if WordsStats.is_content_word(token):
                     word_frequency[token[LEMMA]] += 1
 
         for w, c in word_frequency.items():
