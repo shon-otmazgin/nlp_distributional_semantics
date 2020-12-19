@@ -28,4 +28,7 @@ DEPENDENCY = 'dependency'
 IN = 'in'
 OUT = 'out'
 
+MIN_ATT_COUNT = 75
+NUM_MOST_COMMON_ATT = 100
+
 
