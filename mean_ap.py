@@ -8,7 +8,7 @@ SEMANTIC = 'semantic'
 relevant = defaultdict(lambda: defaultdict(lambda: defaultdict(bool)))
 retrieved = defaultdict(lambda: defaultdict(list))
 
-num = 250
+num = 300
 input_file = f'{num}_features/annotation_output_{num}_ftrs'
 with open(input_file, 'r', encoding='utf8') as f:
     for row in f:

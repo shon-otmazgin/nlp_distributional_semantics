@@ -1,7 +1,6 @@
 import time
 from collections import defaultdict, Counter
 import math
-import string
 from utils import *
 
 
@@ -89,7 +88,7 @@ class WordsStats:
     @staticmethod
     def is_content_word(postag, lemma):
         postag_valid = postag in CONTENT_WORD_TAGS
-        lemma_valid = lemma not in STOP_WORDS and lemma not in list(string.punctuation)
+        lemma_valid = lemma not in STOP_WORDS and lemma not in PUNCTUATION_LIST
         return postag_valid and lemma_valid
 
     @staticmethod
@@ -105,9 +104,6 @@ class WordsStats:
     def set_attribute(self, w, att, method):
         hashed_w = self._get_hash(s=w)
         hashed_att = self._get_hash(s=att)
-
-        if w == 'piano' and att == 'piano' and method == SENTENCE:
-            special_counter['SOLO'] += 1
 
         self.word_counts[method][hashed_w][hashed_att] += 1
         if method == DEPENDENCY:
@@ -152,28 +148,30 @@ class WordsStats:
     def words_co_occurring(self, content_words):
         for i, w in enumerate(content_words):
             if self.corpus_word_count[w[LEMMA]] >= self.min_lemma_count:
+
                 low = i - self.window if i >= self.window else 0
                 high = i + self.window+1 if i + self.window+1 <= len(content_words) else len(content_words)
                 window = content_words[low:i] + content_words[i+1:high]
-
-                if w[LEMMA] == 'piano':
-                    for win_w in window:
-                        if win_w[LEMMA] == 'piano':
-                            special_counter[WINDOW] += 1
 
                 for co_word in window:
                     if self.corpus_word_count[co_word[LEMMA]] >= self.min_att_count:
                         self.set_attribute(w=w[LEMMA], att=co_word[LEMMA], method=WINDOW)
 
+                    if w[LEMMA] == 'piano' and co_word[LEMMA] == 'piano':
+                        special_counter[WINDOW] += 1
+
                 sentence = content_words[0:i] + content_words[i+1:]
-                if w[LEMMA] == 'piano':
-                    for sen_w in sentence:
-                        if sen_w[LEMMA] == 'piano':
-                            special_counter[SENTENCE] += 1
 
                 for co_word in sentence:
                     if self.corpus_word_count[co_word[LEMMA]] >= self.min_att_count:
                         self.set_attribute(w=w[LEMMA], att=co_word[LEMMA], method=SENTENCE)
+
+                    if w[LEMMA] == 'piano' and co_word[LEMMA] == 'piano':
+                        special_counter[SENTENCE] += 1
+                    if w[LEMMA] == 'gun':
+                        for x in content_words:
+                            print(x[LEMMA])
+                        print()
 
 
 class WordSimilarities:
@@ -257,15 +255,17 @@ if __name__ == '__main__':
 
     stats = WordsStats(window=2, min_lemma_count=min_lemma_count_).fit(file=file_)
 
-    win_res = stats.word_counts[WINDOW][stats._get_hash("piano")].most_common(20)
-    sen_res = stats.word_counts[SENTENCE][stats._get_hash("piano")].most_common(20)
-    dep_res = stats.word_counts[DEPENDENCY][stats._get_hash("piano")].most_common(20)
-    print(f'for: {stats._get_hash("piano")}')
-    for i in range(len(win_res)):
-        print(f"WINDOW: {stats.int2str[win_res[i][0]]}: {win_res[i][1]}")
-        print(f"SENTENCE: {stats.int2str[sen_res[i][0]]}: {sen_res[i][1]}")
-        print(f"DEPENDENCY: {stats.int2str[dep_res[i][0]]}: {dep_res[i][1]}")
-    print(special_counter)
+    for checkable_w in ['car', 'bus', 'hospital', 'hotel', 'gun', 'bomb', 'horse', 'fox', 'table', 'bowl', 'guitar', 'piano']:
+
+        win_res = stats.word_counts[WINDOW][stats._get_hash(checkable_w)].most_common(20)
+        sen_res = stats.word_counts[SENTENCE][stats._get_hash(checkable_w)].most_common(20)
+        dep_res = stats.word_counts[DEPENDENCY][stats._get_hash(checkable_w)].most_common(20)
+        print(f'for: {checkable_w}')
+        for i in range(len(win_res)):
+            print(f"WINDOW: {stats.int2str[win_res[i][0]]}: {win_res[i][1]}")
+            print(f"SENTENCE: {stats.int2str[sen_res[i][0]]}: {sen_res[i][1]}")
+            print(f"DEPENDENCY: {stats.int2str[dep_res[i][0]]}: {dep_res[i][1]}")
+
 
     print(f'Finished fit stats {(time.time() - start_time):.3f} sec')
 
