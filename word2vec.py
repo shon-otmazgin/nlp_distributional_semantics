@@ -41,10 +41,10 @@ def get_top20_word_similarity():
             bow_sims = bow_W.dot(bow_v)
             dep_sims = dep_W.dot(dep_v)
 
-            most_similar_ids = bow_sims.argsort()[-2:-21:-1]
+            most_similar_ids = bow_sims.argsort()[-2:-22:-1] # start, end, step
             bow_sim_words = bow_words[most_similar_ids]
 
-            most_similar_ids = dep_sims.argsort()[-2:-21:-1]
+            most_similar_ids = dep_sims.argsort()[-2:-22:-1] # start, end, step
             dep_sim_words = dep_words[most_similar_ids]
 
             f.write(f'{target}\n\n')
@@ -94,10 +94,10 @@ def get_top20_attributes():
             bow_att_sims = bow_att_W.dot(bow_v)
             dep_att_sims = dep_att_W.dot(dep_v)
 
-            most_similar_ids = bow_att_sims.argsort()[-1:-10:-1]
+            most_similar_ids = bow_att_sims.argsort()[-1:-11:-1]
             bow_sim_att = bow_att[most_similar_ids]
 
-            most_similar_ids = dep_att_sims.argsort()[-1:-10:-1]
+            most_similar_ids = dep_att_sims.argsort()[-1:-11:-1]
             dep_sim_att = dep_att[most_similar_ids]
 
             f.write(f'{target}\n\n')
