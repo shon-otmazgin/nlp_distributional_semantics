@@ -8,8 +8,8 @@ SEMANTIC = 'semantic'
 relevant = defaultdict(lambda: defaultdict(lambda: defaultdict(bool)))
 retrieved = defaultdict(lambda: defaultdict(list))
 
-num = 300
-input_file = f'{num}_features/annotation_output_{num}_ftrs'
+num = 100
+input_file = f'annotation_output_{num}_ftrs'
 with open(input_file, 'r', encoding='utf8') as f:
     for row in f:
         values = row.rstrip('\n').split()
@@ -38,9 +38,7 @@ def prec_r(R, target_word, method, judge):
 def AP(target_word, method, judge):
     K = len(retrieved[target_word][method])
     N = sum(relevant[target_word][judge].values())
-    # print(f'num of truths: {N} out of total: {K}')
-    # WHY K+1 and R-1??
-    # WHY 4 calls per method?
+
     SUM = 0
     for R in range(1, K+1):
         w = retrieved[target_word][method][R-1]
