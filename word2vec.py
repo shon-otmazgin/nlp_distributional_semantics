@@ -1,5 +1,6 @@
 import numpy as np
 
+# https://levyomer.wordpress.com/2014/04/25/dependency-based-word-embeddings/
 
 def load_and_normalize_vectors(file):
     W = []
