@@ -157,21 +157,11 @@ class WordsStats:
                     if self.corpus_word_count[co_word[LEMMA]] >= self.min_att_count:
                         self.set_attribute(w=w[LEMMA], att=co_word[LEMMA], method=WINDOW)
 
-                    if w[LEMMA] == 'piano' and co_word[LEMMA] == 'piano':
-                        special_counter[WINDOW] += 1
-
                 sentence = content_words[0:i] + content_words[i+1:]
 
                 for co_word in sentence:
                     if self.corpus_word_count[co_word[LEMMA]] >= self.min_att_count:
                         self.set_attribute(w=w[LEMMA], att=co_word[LEMMA], method=SENTENCE)
-
-                    if w[LEMMA] == 'piano' and co_word[LEMMA] == 'piano':
-                        special_counter[SENTENCE] += 1
-                    if w[LEMMA] == 'gun':
-                        for x in content_words:
-                            print(x[LEMMA])
-                        print()
 
 
 class WordSimilarities:
@@ -254,18 +244,6 @@ if __name__ == '__main__':
     file_ = 'wikipedia.sample.trees.lemmatized'
 
     stats = WordsStats(window=2, min_lemma_count=min_lemma_count_).fit(file=file_)
-
-    for checkable_w in ['car', 'bus', 'hospital', 'hotel', 'gun', 'bomb', 'horse', 'fox', 'table', 'bowl', 'guitar', 'piano']:
-
-        win_res = stats.word_counts[WINDOW][stats._get_hash(checkable_w)].most_common(20)
-        sen_res = stats.word_counts[SENTENCE][stats._get_hash(checkable_w)].most_common(20)
-        dep_res = stats.word_counts[DEPENDENCY][stats._get_hash(checkable_w)].most_common(20)
-        print(f'for: {checkable_w}')
-        for i in range(len(win_res)):
-            print(f"WINDOW: {stats.int2str[win_res[i][0]]}: {win_res[i][1]}")
-            print(f"SENTENCE: {stats.int2str[sen_res[i][0]]}: {sen_res[i][1]}")
-            print(f"DEPENDENCY: {stats.int2str[dep_res[i][0]]}: {dep_res[i][1]}")
-
 
     print(f'Finished fit stats {(time.time() - start_time):.3f} sec')
 
