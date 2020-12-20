@@ -41,10 +41,10 @@ def get_top20_word_similarity():
             bow_sims = bow_W.dot(bow_v)
             dep_sims = dep_W.dot(dep_v)
 
-            most_similar_ids = bow_sims.argsort()[-1:-20:-1]
+            most_similar_ids = bow_sims.argsort()[-2:-21:-1]
             bow_sim_words = bow_words[most_similar_ids]
 
-            most_similar_ids = dep_sims.argsort()[-1:-20:-1]
+            most_similar_ids = dep_sims.argsort()[-2:-21:-1]
             dep_sim_words = dep_words[most_similar_ids]
 
             f.write(f'{target}\n\n')
