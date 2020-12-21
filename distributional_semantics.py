@@ -235,7 +235,6 @@ class WordSimilarities:
 
 
 if __name__ == '__main__':
-    special_counter = {WINDOW: 0, SENTENCE: 0 , DEPENDENCY: 0, 'SOLO': 0, 'SOLOOLO': 0}
     min_lemma_count_ = 100
 
     start_time_total = time.time()
