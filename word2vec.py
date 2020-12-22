@@ -11,6 +11,7 @@ def load_and_normalize_vectors(file):
             words.append(row[0])
             v = np.array(row[1:], dtype=np.float)
             W.append(v / np.linalg.norm(v))
+
     return np.array(W), np.array(words)
 
 
@@ -32,7 +33,7 @@ def get_top20_word_similarity():
 
     target_words = ['car', 'bus', 'hospital', 'hotel', 'gun', 'bomb', 'horse', 'fox', 'table', 'bowl', 'guitar',
                     'piano']
-    file = 'word2vec_top20_att.txt'
+    file = 'word2vec_top20.txt'
     with open(file, 'w', encoding='utf8') as f:
         for target in target_words:
             bow_v = bow_W[bow_w2i[target]]  # get target vector
@@ -47,13 +48,19 @@ def get_top20_word_similarity():
             most_similar_ids = dep_sims.argsort()[-2:-22:-1] # start, end, step
             dep_sim_words = dep_words[most_similar_ids]
 
-            f.write(f'{target}\n\n')
+            f.write(f"\\captionof{{table}}{{Top 20 similar words for: {target}}}\n")
+            f.write('\\begin{tabular}{ c|c|c }\n')
+            f.write(f'\\hline\n')
+            f.write(f'BoW-5 & Dependency edge \\\\\n')
+            f.write(f'\\hline\n')
+
             for w1, w2 in zip(bow_sim_words, dep_sim_words):
-                f.write(f"{w1:<20} {w2:<20}\n")
-            f.write(f'*********\n')
+                f.write(f"{w1:<20}&{w2}\\\\\n")
+            f.write(f'\\hline\n')
+            f.write('\\end{tabular}\n')
 
 
-def get_top20_attributes():
+def get_top10_attributes():
     bow_vecs_file = 'word2vec/bow5.words'
     dep_vecs_file = 'word2vec/deps.words'
 
@@ -80,12 +87,12 @@ def get_top20_attributes():
     bow_w2i = {w: i for i, w in enumerate(bow_words)}
     dep_w2i = {w: i for i, w in enumerate(dep_words)}
 
-    bow_att2i = {w: i for i, w in enumerate(bow_att)}
-    dep_att2i = {w: i for i, w in enumerate(dep_att)}
-
+    # bow_att2i = {w: i for i, w in enumerate(bow_att)}
+    # dep_att2i = {w: i for i, w in enumerate(dep_att)}
     target_words = ['car', 'bus', 'hospital', 'hotel', 'gun', 'bomb', 'horse', 'fox', 'table', 'bowl', 'guitar',
                     'piano']
-    file = 'word2vec_top20_att.txt'
+
+    file = 'word2vec_top10_att.txt'
     with open(file, 'w', encoding='utf8') as f:
         for target in target_words:
             bow_v = bow_W[bow_w2i[target]]  # get target vector
@@ -100,12 +107,18 @@ def get_top20_attributes():
             most_similar_ids = dep_att_sims.argsort()[-1:-11:-1]
             dep_sim_att = dep_att[most_similar_ids]
 
-            f.write(f'{target}\n\n')
+            f.write(f"\\captionof{{table}}{{Top 10 attributes for: {target}}}\n")
+            f.write('\\begin{tabular}{ c|c|c }\n')
+            f.write(f'\\hline\n')
+            f.write(f'BoW-5 & Dependency edge \\\\\n')
+            f.write(f'\\hline\n')
+
             for w1, w2 in zip(bow_sim_att, dep_sim_att):
-                f.write(f"{w1:<20} {w2:<20}\n")
-            f.write(f'*********\n')
+                f.write(f"{w1:<20}&{w2}\\\\\n")
+            f.write(f'\\hline\n')
+            f.write('\\end{tabular}\n')
 
 
 get_top20_word_similarity()
-get_top20_attributes()
+get_top10_attributes()
 print()

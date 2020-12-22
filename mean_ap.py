@@ -8,8 +8,8 @@ SEMANTIC = 'semantic'
 relevant = defaultdict(lambda: defaultdict(lambda: defaultdict(bool)))
 retrieved = defaultdict(lambda: defaultdict(list))
 
-num = 100
-input_file = f'annotation_output_{num}_ftrs'
+num = "W2V"
+input_file = f'annotation_output'
 with open(input_file, 'r', encoding='utf8') as f:
     for row in f:
         values = row.rstrip('\n').split()
@@ -64,7 +64,7 @@ def MAP(method):
     print(f'SEMANTIC - Mean AP: {mean_ap_semantic / len(relevant)}')
     print()
 
-print(f'for {num} features:')
+print(f'for {num}:')
 MAP(method=WINDOW)
 MAP(method=SENTENCE)
 MAP(method=DEPENDENCY)
