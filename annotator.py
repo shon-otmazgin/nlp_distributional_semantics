@@ -40,5 +40,5 @@ with open(input_file, 'r', encoding='utf8') as f, open(output_file, 'w', encodin
         else:
             s = ""
             for w in values:
-                s += f'{w:<12}{"+" if topic_annotation[t_word][w] else "-"} {"+" if semantic_annotation[t_word][w] else "-":<5}'
+                s += f'{w:<20}{"+" if topic_annotation[t_word][w] else "-"} {"+" if semantic_annotation[t_word][w] else "-":<5}'
             f2.write(f'{s}\n')

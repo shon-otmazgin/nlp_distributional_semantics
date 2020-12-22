@@ -1,24 +1,24 @@
 car
-cars        + +    truck       + +    
-truck       + +    suv         + +    
-automobile  + +    vehicle     + +    
-vehicle     + +    minivan     + +    
-motorbike   + +    cars        + +    
-motorcycle  + +    speedboat   + +    
-driver      + -    racecar     + +    
-minivan     + +    automobile  + +    
-suv         + +    motorcar    + +    
-lorry       + +    jeep        + +    
-motorcar    + +    limousine   + +    
-mid-engined + -    minibus     + +    
-limousine   + +    lorry       + +    
-front-engined+ -    limo        + +    
-moped       + +    motorcycle  + +    
-motorhome   + +    bike        + +    
-mercedes-benz+ +    motorhome   + +    
-bike        + +    taxicab     + +    
-rear-engined+ -    roadster    + +    
-three-wheeled+ -    wagon       + -    
+cars          + +    truck       + +
+truck         + +    suv         + +
+automobile    + +    vehicle     + +
+vehicle       + +    minivan     + +
+motorbike     + +    cars        + +
+motorcycle    + +    speedboat   + +
+driver        + -    racecar     + +
+minivan       + +    automobile  + +
+suv           + +    motorcar    + +
+lorry         + +    jeep        + +
+motorcar      + +    limousine   + +
+mid-engined   + -    minibus     + +
+limousine     + +    lorry       + +
+front-engined + -    limo        + +
+moped         + +    motorcycle  + +
+motorhome     + +    bike        + +
+mercedes-benz + +    motorhome   + +
+bike          + +    taxicab     + +
+rear-engined  + -    roadster    + +
+three-wheeled + -    wagon       + -
 
 piano
 violin      + +    violin      + +    
