@@ -49,7 +49,7 @@ def get_top20_word_similarity():
             dep_sim_words = dep_words[most_similar_ids]
 
             f.write(f"\\captionof{{table}}{{Top 20 similar words for: {target}}}\n")
-            f.write('\\begin{tabular}{ c|c|c }\n')
+            f.write('\\begin{tabular}{ c|c }\n')
             f.write(f'\\hline\n')
             f.write(f'BoW-5 & Dependency edge \\\\\n')
             f.write(f'\\hline\n')
@@ -108,7 +108,7 @@ def get_top10_attributes():
             dep_sim_att = dep_att[most_similar_ids]
 
             f.write(f"\\captionof{{table}}{{Top 10 attributes for: {target}}}\n")
-            f.write('\\begin{tabular}{ c|c|c }\n')
+            f.write('\\begin{tabular}{ c|c }\n')
             f.write(f'\\hline\n')
             f.write(f'BoW-5 & Dependency edge \\\\\n')
             f.write(f'\\hline\n')
