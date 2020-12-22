@@ -26,6 +26,7 @@ PUNCTUATION_LIST = list(string.punctuation)
 SENTENCE = 'sentence'
 WINDOW = 'window'
 DEPENDENCY = 'dependency'
+BOW5 = 'bow5'
 IN = 'in'
 OUT = 'out'
 
